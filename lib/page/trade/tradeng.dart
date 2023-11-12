@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
+import 'package:simulator_of_trading/page/trade/graph/graph.dart';
 import 'package:simulator_of_trading/page/trade/widget/balance.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:svg_flutter/svg.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class Tradeng extends StatefulWidget {
   const Tradeng({Key? key}) : super(key: key);
@@ -225,8 +224,9 @@ class _TradengState extends State<Tradeng> {
         child: Column(
           children: [
             Container(
+              width: MediaQuery.of(context).size.width,
               height: 479,
-              color: Colors.red,
+              child: Graph(),
             ),
             const SizedBox(
               height: 16,

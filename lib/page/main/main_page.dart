@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:simulator_of_trading/page/background/background.dart';
 import 'package:simulator_of_trading/page/main/main_widget.dart';
+import 'package:simulator_of_trading/page/settings/setting_page.dart';
 import 'package:simulator_of_trading/page/trade/tradeng.dart';
 import 'package:svg_flutter/svg.dart';
 
@@ -79,7 +81,7 @@ class _MainPageState extends State<MainPage> {
                         Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => Tradeng(),
+                              builder: (context) => const Tradeng(),
                             ),
                             (route) => false);
                       },
@@ -99,22 +101,42 @@ class _MainPageState extends State<MainPage> {
                             borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
+                    const SizedBox(
+                      height: 24,
+                    ),
                     CustomButton(
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const Background(),
+                            ),
+                            (route) => false);
+                      },
                       text: 'Background',
                       clip: Clip.antiAlias,
                       decoration: ShapeDecoration(
-                        color: Color(0xFF0A1730),
+                        color: const Color(0xFF0A1730),
                         shape: RoundedRectangleBorder(
                           side: const BorderSide(width: 1, color: Colors.white),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
+                    const SizedBox(
+                      height: 24,
+                    ),
                     CustomButton(
+                      onPressed: () => Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingPage(),
+                          ),
+                          (route) => false),
                       text: 'Settings',
                       clip: Clip.antiAlias,
                       decoration: ShapeDecoration(
-                        color: Color(0xFF0A1730),
+                        color: const Color(0xFF0A1730),
                         shape: RoundedRectangleBorder(
                           side: const BorderSide(width: 1, color: Colors.white),
                           borderRadius: BorderRadius.circular(8),

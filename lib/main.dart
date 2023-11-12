@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/page.dart';
 
-import 'page/trade/graph/graph.dart';
-
 void main() {
   runApp(
     const MyApp(),
@@ -16,7 +14,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Graph(),
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color(0xff00031C),
+      ),
+      home: Splash(),
     );
   }
 }
