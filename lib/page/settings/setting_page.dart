@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
 import 'package:simulator_of_trading/page/settings/settings_widget.dart';
 import 'package:svg_flutter/svg.dart';
@@ -69,11 +70,11 @@ class _SettingPageState extends State<SettingPage> {
             CustomButtonSettings(
               settingsImage: 'assets/images/svg/share.svg',
               settingsText: 'Share',
-              onPressed: () {
-                // Share.share(
-                //   'Посмотрите эту ссылку: $urlToShare',
-                //   subject: 'Поделиться ссылкой',
-                // );
+              onPressed: () async {
+                await Share.share(
+                  '$urlToShare',
+                  subject: 'Поделиться ссылкой',
+                );
               },
             ),
           ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
-import 'package:simulator_of_trading/page/trade/graph/graph.dart';
+import 'package:simulator_of_trading/page/trade/graph/linde.dart';
 import 'package:simulator_of_trading/page/trade/widget/balance.dart';
 import 'package:svg_flutter/svg.dart';
 
@@ -32,7 +32,8 @@ class _TradengState extends State<Tradeng> {
   ];
   String selectedOption = 'EUR/USD';
   String selectedPrice = '20';
-
+  String selectedTime = '00:30';
+  int selectedTimeIndex = 0;
   int selectedOptionIndex = 0;
   int selectedPriceIndex = 0;
 
@@ -283,6 +284,133 @@ class _TradengState extends State<Tradeng> {
     );
   }
 
+  void _showTime(BuildContext context) {
+    List<String> times = generateTimeOptions();
+    showModalBottomSheet(
+      context: context,
+      builder: (
+        BuildContext context,
+      ) {
+        return DraggableScrollableSheet(
+          expand: false,
+          builder: (BuildContext context, ScrollController controller) {
+            return Container(
+              color: const Color(0xff0A1730),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(10),
+                      width: 48,
+                      height: 4,
+                      decoration: ShapeDecoration(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(
+                      top: 16,
+                      bottom: 24,
+                      left: 16,
+                    ),
+                    child: Text(
+                      'Time',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontFamily: 'SFProText',
+                        fontWeight: FontWeight.w500,
+                        height: 0,
+                        letterSpacing: 0.32,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: controller,
+                      itemCount: times.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return ListTile(
+                          title: Container(
+                            height: 56,
+                            padding: const EdgeInsets.all(16),
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              gradient: index == selectedTimeIndex
+                                  ? const LinearGradient(
+                                      begin: Alignment(1.00, 0.03),
+                                      end: Alignment(-1, -0.03),
+                                      colors: [
+                                        Color(0xFF06B1FC),
+                                        Color(0xFF0017FF),
+                                        Color(0xFF18BBD7)
+                                      ],
+                                    )
+                                  : null,
+                              color: index != selectedTimeIndex
+                                  ? null
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  times[index],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontFamily: 'SFProText',
+                                    fontWeight: FontWeight.w500,
+                                    height: 0,
+                                    letterSpacing: 0.32,
+                                  ),
+                                ),
+                                if (index == selectedTimeIndex)
+                                  Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                  ),
+                              ],
+                            ),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              selectedTimeIndex = index;
+                              selectedTime = times[
+                                  index]; // если вам нужно сохранить выбранное время
+                              Navigator.pop(context);
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<String> generateTimeOptions() {
+    List<String> times = ['00:30', '01:00', '02:00', '05:00', '10:00'];
+    return times;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -364,7 +492,7 @@ class _TradengState extends State<Tradeng> {
             Container(
               width: MediaQuery.of(context).size.width,
               height: 479,
-              child: Graph(),
+              child: Linde(),
             ),
             const SizedBox(
               height: 16,
@@ -434,7 +562,7 @@ class _TradengState extends State<Tradeng> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -450,15 +578,22 @@ class _TradengState extends State<Tradeng> {
                         ),
                       ),
                       SizedBox(height: 4),
-                      Text(
-                        '05:00',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontFamily: 'SFProText',
-                          fontWeight: FontWeight.w500,
-                          height: 0,
-                          letterSpacing: 0.32,
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _showTime(context);
+                          });
+                        },
+                        child: Text(
+                          selectedTime,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontFamily: 'SFProText',
+                            fontWeight: FontWeight.w500,
+                            height: 0,
+                            letterSpacing: 0.32,
+                          ),
                         ),
                       ),
                     ],
