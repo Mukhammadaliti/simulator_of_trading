@@ -11,6 +11,8 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
+  String urlToShare = 'http://example.com';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,7 +51,7 @@ class _SettingPageState extends State<SettingPage> {
       ),
       body: Container(
         padding: const EdgeInsets.all(24),
-        child: const Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CustomButtonSettings(
@@ -67,6 +69,12 @@ class _SettingPageState extends State<SettingPage> {
             CustomButtonSettings(
               settingsImage: 'assets/images/svg/share.svg',
               settingsText: 'Share',
+              onPressed: () {
+                // Share.share(
+                //   'Посмотрите эту ссылку: $urlToShare',
+                //   subject: 'Поделиться ссылкой',
+                // );
+              },
             ),
           ],
         ),

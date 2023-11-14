@@ -9,7 +9,7 @@ class Balance extends StatefulWidget {
 }
 
 class _BalanceState extends State<Balance> {
-  int userBalance = 10000;
+  int userBalance = 9000;
   late DateTime lastLoginDate;
 
   @override

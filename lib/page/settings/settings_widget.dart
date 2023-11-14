@@ -6,9 +6,11 @@ class CustomButtonSettings extends StatelessWidget {
     super.key,
     required this.settingsImage,
     required this.settingsText,
+    this.onPressed,
   });
   final String settingsImage;
   final String settingsText;
+  final Function()? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,7 @@ class CustomButtonSettings extends StatelessWidget {
           style: TextButton.styleFrom(
               backgroundColor: const Color(0xff0A1730),
               side: const BorderSide(color: Colors.white)),
-          onPressed: () {},
+          onPressed: onPressed,
           child: Row(
             children: [
               Padding(

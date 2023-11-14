@@ -21,8 +21,20 @@ class _TradengState extends State<Tradeng> {
     'USD/CNH',
     'GBP/USD',
   ];
+  final List<String> price = [
+    '20',
+    '50',
+    '100',
+    '500',
+    '1000',
+    '2000',
+    '5000',
+  ];
   String selectedOption = 'EUR/USD';
+  String selectedPrice = '20';
+
   int selectedOptionIndex = 0;
+  int selectedPriceIndex = 0;
 
   void _showBottomSheet(
     BuildContext context,
@@ -63,7 +75,7 @@ class _TradengState extends State<Tradeng> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
-                          fontFamily: 'SF Pro Text',
+                          fontFamily: 'SFProText',
                           fontWeight: FontWeight.w500,
                           height: 0,
                           letterSpacing: 0.32,
@@ -136,6 +148,132 @@ class _TradengState extends State<Tradeng> {
                               },
                             );
                           }),
+                    ),
+                  ],
+                ),
+              );
+            });
+      },
+    );
+  }
+
+  void _showPrice(
+    BuildContext context,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (
+        BuildContext context,
+      ) {
+        return DraggableScrollableSheet(
+            minChildSize: 0.5,
+            maxChildSize: 1.0,
+            expand: false,
+            builder: (BuildContext context, ScrollController controller) {
+              return Container(
+                color: const Color(0xff0A1730),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.all(10),
+                        width: 48,
+                        height: 4,
+                        decoration: ShapeDecoration(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(
+                        top: 16,
+                        bottom: 24,
+                        left: 16,
+                      ),
+                      child: Text(
+                        'Amount',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'SFProText',
+                          fontWeight: FontWeight.w500,
+                          height: 0,
+                          letterSpacing: 0.32,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                          controller: controller,
+                          itemCount: options.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return ListTile(
+                              title: Container(
+                                height: 56,
+                                padding: const EdgeInsets.all(16),
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(
+                                  gradient: index == selectedPriceIndex
+                                      ? const LinearGradient(
+                                          begin: Alignment(1.00, 0.03),
+                                          end: Alignment(-1, -0.03),
+                                          colors: [
+                                            Color(0xFF06B1FC),
+                                            Color(0xFF0017FF),
+                                            Color(0xFF18BBD7)
+                                          ],
+                                        )
+                                      : null, // No gradient for unselected options
+                                  color: index != selectedPriceIndex
+                                      ? null
+                                      : Colors
+                                          .white, // No background color for unselected options
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors
+                                        .white, // White border for unselected options
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      price[index],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'SFProText',
+                                        fontWeight: FontWeight.w500,
+                                        height: 0,
+                                        letterSpacing: 0.32,
+                                      ),
+                                    ),
+                                    if (index == selectedPriceIndex)
+                                      SvgPicture.asset(
+                                        'assets/images/svg/check.svg',
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  selectedPriceIndex = index;
+                                  selectedPrice = price[index];
+                                  Navigator.pop(context);
+                                });
+                              },
+                            );
+                          }),
+                    ),
+                    SizedBox(
+                      height: 50,
                     ),
                   ],
                 ),
@@ -243,7 +381,7 @@ class _TradengState extends State<Tradeng> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -259,15 +397,29 @@ class _TradengState extends State<Tradeng> {
                         ),
                       ),
                       SizedBox(height: 4),
-                      Text(
-                        '20',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontFamily: 'SFProText',
-                          fontWeight: FontWeight.w500,
-                          height: 0,
-                          letterSpacing: 0.32,
+                      InkWell(
+                        onTap: () {
+                          _showPrice(context);
+                          setState(() {});
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              selectedPrice,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 19,
+                                fontFamily: 'SFProText',
+                                fontWeight: FontWeight.w500,
+                                height: 0,
+                                letterSpacing: 0.32,
+                              ),
+                            ),
+                            SvgPicture.asset(
+                              'assets/images/svg/down.svg',
+                            ),
+                          ],
                         ),
                       ),
                     ],
