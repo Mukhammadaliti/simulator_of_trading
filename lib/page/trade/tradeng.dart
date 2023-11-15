@@ -12,6 +12,9 @@ class Tradeng extends StatefulWidget {
 }
 
 class _TradengState extends State<Tradeng> {
+  final GlobalKey<LindeState> lindeKey = GlobalKey<LindeState>();
+
+  List<Offset> markers = [];
   final List<String> options = [
     'EUR/USD',
     'USD/JPY',
@@ -584,16 +587,24 @@ class _TradengState extends State<Tradeng> {
                             _showTime(context);
                           });
                         },
-                        child: Text(
-                          selectedTime,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 19,
-                            fontFamily: 'SFProText',
-                            fontWeight: FontWeight.w500,
-                            height: 0,
-                            letterSpacing: 0.32,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              selectedTime,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 19,
+                                fontFamily: 'SFProText',
+                                fontWeight: FontWeight.w500,
+                                height: 0,
+                                letterSpacing: 0.32,
+                              ),
+                            ),
+                            SvgPicture.asset(
+                              'assets/images/svg/down.svg',
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -652,7 +663,12 @@ class _TradengState extends State<Tradeng> {
                   width: 155.50,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        lindeKey.currentState?.showBuyMarkerOnChart();
+                      });
+                      print('Buy button pressed');
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xff079504),
                       shape: RoundedRectangleBorder(
