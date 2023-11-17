@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
 import 'package:simulator_of_trading/page/trade/graph/linde.dart';
@@ -147,6 +148,7 @@ class _TradengState extends State<Tradeng> {
                                 setState(() {
                                   selectedOptionIndex = index;
                                   selectedOption = options[index];
+
                                   Navigator.pop(context);
                                 });
                               },
@@ -495,7 +497,9 @@ class _TradengState extends State<Tradeng> {
             Container(
               width: MediaQuery.of(context).size.width,
               height: 479,
-              child: Linde(),
+              child: Linde(
+                key: lindeKey,
+              ),
             ),
             const SizedBox(
               height: 16,
@@ -665,7 +669,7 @@ class _TradengState extends State<Tradeng> {
                   child: ElevatedButton(
                     onPressed: () {
                       setState(() {
-                        lindeKey.currentState?.showBuyMarkerOnChart();
+                        lindeKey.currentState?.buyTrade();
                       });
                       print('Buy button pressed');
                     },
@@ -697,7 +701,11 @@ class _TradengState extends State<Tradeng> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        lindeKey.currentState?.sellTrade();
+                      });
+                    },
                     child: const Text(
                       'Sell',
                       textAlign: TextAlign.center,

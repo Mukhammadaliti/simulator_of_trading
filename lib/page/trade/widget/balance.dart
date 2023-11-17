@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 class Balance extends StatefulWidget {
   const Balance({Key? key}) : super(key: key);
@@ -9,44 +10,43 @@ class Balance extends StatefulWidget {
 }
 
 class _BalanceState extends State<Balance> {
-  int userBalance = 9000;
-  late DateTime lastLoginDate;
-
   @override
   void initState() {
     super.initState();
-    lastLoginDate = DateTime.now();
-    getLastLoginDate();
-    updateBalance();
+    initializeBalance();
+    startDailyTask();
   }
 
-  void getLastLoginDate() async {
+  // Установка начального баланса
+  void initializeBalance() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (prefs.containsKey('lastLoginDate')) {
-      lastLoginDate = DateTime.parse(prefs.getString('lastLoginDate')!);
-    } else {
-      lastLoginDate = DateTime.now();
-      updateLastLoginDate();
-    }
+    int initialBalance = prefs.getInt('balance') ?? 10000;
+    prefs.setInt('balance', initialBalance);
   }
 
-  void updateLastLoginDate() async {
+  // Запуск ежедневной задачи
+  void startDailyTask() {
+    const oneDay = const Duration(days: 1);
+    Timer.periodic(oneDay, (Timer t) {
+      // Ваш код для увеличения баланса
+      increaseBalance();
+    });
+  }
+
+  // Логика увеличения баланса
+  void increaseBalance() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('lastLoginDate', DateTime.now().toIso8601String());
+    int currentBalance = prefs.getInt('balance') ?? 0;
+
+    setState(() {
+      currentBalance += 1000;
+      prefs.setInt('balance', currentBalance);
+    });
   }
 
-  void updateBalance() {
-    if (DateTime.now().difference(lastLoginDate).inDays > 0) {
-      setState(() {
-        if (userBalance < 10000) {
-          userBalance = 10000;
-
-          // Предположим, что у вас есть функция установки нового баланса пользователю.
-          // setNewBalance(userBalance);
-        }
-      });
-      updateLastLoginDate();
-    }
+  void clearBalanceCache() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.remove('balance');
   }
 
   @override
@@ -68,17 +68,27 @@ class _BalanceState extends State<Balance> {
         const SizedBox(
           height: 4,
         ),
-        Text(
-          userBalance.toString(),
-          textAlign: TextAlign.right,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontFamily: 'SFProText',
-            fontWeight: FontWeight.w500,
-            height: 0,
-            letterSpacing: 0.32,
-          ),
+        FutureBuilder(
+          future: SharedPreferences.getInstance(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return CircularProgressIndicator();
+            }
+            int currentBalance =
+                (snapshot.data as SharedPreferences).getInt('balance') ?? 0;
+            return Text(
+              '$currentBalance',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontFamily: 'SFProText',
+                fontWeight: FontWeight.w500,
+                height: 0,
+                letterSpacing: 0.32,
+              ),
+            );
+          },
         ),
       ],
     );

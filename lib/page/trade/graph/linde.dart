@@ -12,16 +12,57 @@ class Linde extends StatefulWidget {
   LindeState createState() => LindeState();
 }
 
+final List<Color> gradientColor = [
+  const Color(0xff0171C8),
+  const Color.fromARGB(47, 1, 7, 5)
+];
+
 class LindeState extends State<Linde> {
   late List<LiveData> chartData;
   late int lastDataIndex;
-  bool showBuyMarker = false;
-  int buyMarkerIndex = -1;
+  late SfCartesianChart chart;
+  List<LiveData> buyTrades = [];
+  List<LiveData> sellTrades = [];
 
-  void showBuyMarkerOnChart() {
+  void buyTrade() {
     setState(() {
-      showBuyMarker = true;
-      buyMarkerIndex = lastDataIndex;
+      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+      double newSpeed = chartData[lastDataIndex].speed + randomChange;
+      newSpeed = newSpeed.clamp(1.07086, 1.17086);
+
+      buyTrades.add(LiveData(time++, newSpeed));
+
+      // Устанавливаем таймер на 10 секунд для удаления маркера
+      Timer(Duration(seconds: 10), () {
+        buyremovetrade();
+      });
+    });
+  }
+
+  void sellTrade() {
+    setState(() {
+      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+      double newSpeed = chartData[lastDataIndex].speed + randomChange;
+      newSpeed = newSpeed.clamp(1.07086, 1.17086);
+
+      sellTrades.add(LiveData(time++, newSpeed));
+
+      // Устанавливаем таймер на 10 секунд для удаления маркера
+      Timer(Duration(seconds: 10), () {
+        selltremovetrade();
+      });
+    });
+  }
+
+  void selltremovetrade() {
+    setState(() {
+      sellTrades.clear();
+    });
+  }
+
+  void buyremovetrade() {
+    setState(() {
+      buyTrades.clear();
     });
   }
 
@@ -43,16 +84,16 @@ class LindeState extends State<Linde> {
         shouldAlwaysShow: true,
       ),
       plotAreaBorderWidth: 0.0,
-      series: <LineSeries<LiveData, int>>[
+      series: <CartesianSeries<LiveData, int>>[
         LineSeries<LiveData, int>(
           dataSource: chartData,
           color: Colors.white,
-          xValueMapper: (LiveData sales, _) => sales.time,
+          xValueMapper: (LiveData sales, _) => sales.time.toInt(),
           yValueMapper: (LiveData sales, _) => sales.speed,
         ),
         LineSeries<LiveData, int>(
           dataSource: [chartData[lastDataIndex]],
-          xValueMapper: (LiveData sales, _) => sales.time,
+          xValueMapper: (LiveData sales, _) => sales.time.toInt(),
           yValueMapper: (LiveData sales, _) => sales.speed,
           markerSettings: MarkerSettings(
             borderColor: Colors.white,
@@ -80,30 +121,36 @@ class LindeState extends State<Linde> {
         LineSeries<LiveData, int>(
           dataSource: chartData,
           color: Colors.white,
-          xValueMapper: (LiveData sales, _) => sales.time,
+          xValueMapper: (LiveData sales, _) => sales.time.toInt(),
           yValueMapper: (LiveData sales, _) => sales.speed,
-          dataLabelSettings: DataLabelSettings(
-            isVisible: showBuyMarker,
-            builder: (data, point, series, pointIndex, seriesIndex) {
-              if (data.pointIndex == buyMarkerIndex) {
-                return Container(
-                  padding: EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    'Buy',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                );
-              } else {
-                return SizedBox.shrink();
-              }
-            },
+          dataLabelSettings: DataLabelSettings(),
+        ),
+        ScatterSeries<LiveData, int>(
+          dataSource: buyTrades,
+          xValueMapper: (LiveData marker, _) => marker.time.toInt(),
+          yValueMapper: (LiveData marker, _) => marker.speed,
+          color: Colors.green,
+          markerSettings: MarkerSettings(
+            borderColor: Colors.white,
+            borderWidth: 2,
+            isVisible: true,
+            width: 13,
+            height: 13,
+            shape: DataMarkerType.circle,
+          ),
+        ),
+        ScatterSeries<LiveData, int>(
+          dataSource: sellTrades,
+          xValueMapper: (LiveData marker, _) => marker.time.toInt(),
+          yValueMapper: (LiveData marker, _) => marker.speed,
+          color: Colors.red,
+          markerSettings: MarkerSettings(
+            borderColor: Colors.white,
+            borderWidth: 2,
+            isVisible: true,
+            width: 13,
+            height: 13,
+            shape: DataMarkerType.circle,
           ),
         ),
       ],
@@ -137,7 +184,7 @@ class LindeState extends State<Linde> {
 
   void updateDataSource(Timer timer) {
     setState(() {
-      double randomChange = (math.Random().nextDouble() - 0.5) * 0.01;
+      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
       double newSpeed = chartData[lastDataIndex].speed + randomChange;
       newSpeed = newSpeed.clamp(1.07086, 1.17086);
 
@@ -178,6 +225,6 @@ class LindeState extends State<Linde> {
 
 class LiveData {
   LiveData(this.time, this.speed);
-  final int time;
+  final num time;
   final num speed;
 }
