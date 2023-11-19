@@ -19,10 +19,12 @@ final List<Color> gradientColor = [
 
 class LindeState extends State<Linde> {
   late List<LiveData> chartData;
+  late Timer _timer;
   late int lastDataIndex;
   late SfCartesianChart chart;
   List<LiveData> buyTrades = [];
   List<LiveData> sellTrades = [];
+  int elapsedTime = 0;
 
   void buyTrade() {
     setState(() {
@@ -69,8 +71,15 @@ class LindeState extends State<Linde> {
   void initState() {
     chartData = getChartData();
     lastDataIndex = chartData.length - 1;
-    Timer.periodic(const Duration(seconds: 2), updateDataSource);
+    _timer = Timer.periodic(const Duration(seconds: 1), updateDataSource);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    // Cancel the timer in the dispose method
+    _timer.cancel();
+    super.dispose();
   }
 
   @override
@@ -184,16 +193,19 @@ class LindeState extends State<Linde> {
 
   void updateDataSource(Timer timer) {
     setState(() {
-      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
-      double newSpeed = chartData[lastDataIndex].speed + randomChange;
-      newSpeed = newSpeed.clamp(1.07086, 1.17086);
+      elapsedTime++;
+      if (elapsedTime % 20 == 0) {
+        double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+        double newSpeed = chartData[lastDataIndex].speed + randomChange;
+        newSpeed = newSpeed.clamp(1.07086, 1.17086);
 
-      chartData.add(LiveData(time++, newSpeed));
-      lastDataIndex = chartData.length - 1;
+        chartData.add(LiveData(time++, newSpeed));
+        lastDataIndex = chartData.length - 1;
 
-      if (chartData.length > 19) {
-        chartData.removeAt(0);
-        lastDataIndex--;
+        if (chartData.length > 19) {
+          chartData.removeAt(0);
+          lastDataIndex--;
+        }
       }
     });
   }

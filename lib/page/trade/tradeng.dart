@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
 import 'package:simulator_of_trading/page/trade/graph/linde.dart';

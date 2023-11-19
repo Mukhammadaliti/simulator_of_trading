@@ -6,10 +6,10 @@ class Balance extends StatefulWidget {
   const Balance({Key? key}) : super(key: key);
 
   @override
-  State<Balance> createState() => _BalanceState();
+  State<Balance> createState() => BalanceState();
 }
 
-class _BalanceState extends State<Balance> {
+class BalanceState extends State<Balance> {
   @override
   void initState() {
     super.initState();
