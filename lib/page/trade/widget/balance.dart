@@ -3,7 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class Balance extends StatefulWidget {
-  const Balance({Key? key}) : super(key: key);
+  final Function(int)? onBalanceChanged;
+
+  const Balance({Key? key, this.onBalanceChanged}) : super(key: key);
 
   @override
   State<Balance> createState() => _BalanceState();
@@ -26,7 +28,7 @@ class _BalanceState extends State<Balance> {
 
   // Запуск ежедневной задачи
   void startDailyTask() {
-    const oneDay = const Duration(days: 1);
+    const oneDay = const Duration(seconds: 3);
     Timer.periodic(oneDay, (Timer t) {
       // Ваш код для увеличения баланса
       increaseBalance();
@@ -41,6 +43,9 @@ class _BalanceState extends State<Balance> {
     setState(() {
       currentBalance += 1000;
       prefs.setInt('balance', currentBalance);
+
+      // Проверка, что колбэк не является null перед его вызовом
+      widget.onBalanceChanged?.call(currentBalance);
     });
   }
 

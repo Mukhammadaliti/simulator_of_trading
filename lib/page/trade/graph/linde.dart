@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class Linde extends StatefulWidget {
-  Linde({
-    Key? key,
-  }) : super(key: key);
+  final Function(double) onBuyTrade;
+  Linde({Key? key, required this.onBuyTrade}) : super(key: key);
 
   @override
   LindeState createState() => LindeState();
@@ -20,9 +19,19 @@ final List<Color> gradientColor = [
 class LindeState extends State<Linde> {
   late List<LiveData> chartData;
   late int lastDataIndex;
-  late SfCartesianChart chart;
+  double? previousMarkerY;
+  late Timer _timer;
   List<LiveData> buyTrades = [];
   List<LiveData> sellTrades = [];
+  Map<int, int> markersTimestamps = {};
+  void setMarker(double y) {
+    if (previousMarkerY != null) {
+      double newSpeed = (y - previousMarkerY!);
+      widget.onBuyTrade(newSpeed > 0 ? 2 : 0);
+    }
+
+    previousMarkerY = y;
+  }
 
   void buyTrade() {
     setState(() {
@@ -30,13 +39,27 @@ class LindeState extends State<Linde> {
       double newSpeed = chartData[lastDataIndex].speed + randomChange;
       newSpeed = newSpeed.clamp(1.07086, 1.17086);
 
-      buyTrades.add(LiveData(time++, newSpeed));
+      LiveData newTrade = LiveData(time++, newSpeed, TradeType.buy);
+      chartData.add(newTrade);
+      lastDataIndex = chartData.length - 1;
+      if (chartData.length > 19) {
+        chartData.removeAt(0);
+        lastDataIndex--;
+      }
 
-      // Устанавливаем таймер на 10 секунд для удаления маркера
-      Timer(Duration(seconds: 10), () {
-        buyremovetrade();
+      buyTrades.add(newTrade);
+      markersTimestamps[newTrade.time.toInt()] =
+          DateTime.now().millisecondsSinceEpoch;
+
+      _timer = Timer(Duration(seconds: 10), () {
+        removeExpiredMarkers();
       });
     });
+  }
+
+  double getReward() {
+    // Возвращаем reward текущего состояния
+    return widget.onBuyTrade(chartData[lastDataIndex].speed);
   }
 
   void sellTrade() {
@@ -45,24 +68,48 @@ class LindeState extends State<Linde> {
       double newSpeed = chartData[lastDataIndex].speed + randomChange;
       newSpeed = newSpeed.clamp(1.07086, 1.17086);
 
-      sellTrades.add(LiveData(time++, newSpeed));
+      LiveData newTrade = LiveData(time++, newSpeed, TradeType.sell);
+      chartData.add(newTrade);
+      lastDataIndex = chartData.length - 1;
+      if (chartData.length > 19) {
+        chartData.removeAt(0);
+        lastDataIndex--;
+      }
 
-      // Устанавливаем таймер на 10 секунд для удаления маркера
-      Timer(Duration(seconds: 10), () {
-        selltremovetrade();
+      sellTrades.add(newTrade);
+      markersTimestamps[newTrade.time.toInt()] =
+          DateTime.now().millisecondsSinceEpoch;
+
+      _timer = Timer(Duration(seconds: 10), () {
+        removeExpiredMarkers();
       });
     });
   }
 
-  void selltremovetrade() {
-    setState(() {
-      sellTrades.clear();
-    });
+  @override
+  void dispose() {
+    // Отмените таймер в методе dispose
+    _timer.cancel();
+    super.dispose();
   }
 
-  void buyremovetrade() {
+  void removeExpiredMarkers() {
     setState(() {
-      buyTrades.clear();
+      final int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
+      final List<int> keysToRemove = [];
+
+      markersTimestamps.forEach((key, timestamp) {
+        if (currentTimestamp - timestamp >= 10000) {
+          keysToRemove.add(key);
+        }
+      });
+
+      keysToRemove.forEach((key) {
+        buyTrades.removeWhere((marker) => marker.time.toInt() == key);
+        sellTrades.removeWhere((trade) => trade.time.toInt() == key);
+
+        markersTimestamps.remove(key);
+      });
     });
   }
 
@@ -181,16 +228,15 @@ class LindeState extends State<Linde> {
   }
 
   int time = 19;
-
   void updateDataSource(Timer timer) {
     setState(() {
       double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
       double newSpeed = chartData[lastDataIndex].speed + randomChange;
       newSpeed = newSpeed.clamp(1.07086, 1.17086);
+      widget.onBuyTrade(newSpeed);
 
-      chartData.add(LiveData(time++, newSpeed));
+      chartData.add(LiveData(time++, newSpeed, TradeType.buy));
       lastDataIndex = chartData.length - 1;
-
       if (chartData.length > 19) {
         chartData.removeAt(0);
         lastDataIndex--;
@@ -199,32 +245,25 @@ class LindeState extends State<Linde> {
   }
 
   List<LiveData> getChartData() {
-    return <LiveData>[
-      LiveData(0, 1.10520),
-      LiveData(1, 1.10522),
-      LiveData(2, 1.20524),
-      LiveData(3, 1.20526),
-      LiveData(4, 1.30528),
-      LiveData(5, 1.30530),
-      LiveData(6, 1.40532),
-      LiveData(7, 1.40534),
-      LiveData(9, 1.50520),
-      LiveData(10, 1.50560),
-      LiveData(11, 1.60550),
-      LiveData(12, 1.60540),
-      LiveData(13, 1.70510),
-      LiveData(14, 1.70590),
-      LiveData(15, 1.80570),
-      LiveData(16, 1.80510),
-      LiveData(17, 1.90530),
-      LiveData(18, 1.90550),
-      LiveData(19, 1.10636),
-    ];
+    List<LiveData> randomData = [];
+    for (int i = 0; i < 20; i++) {
+      double randomSpeed =
+          1.07086 + math.Random().nextDouble() * (1.17086 - 1.07086);
+      randomData.add(LiveData(i, randomSpeed, TradeType.buy));
+    }
+    return randomData;
   }
 }
 
 class LiveData {
-  LiveData(this.time, this.speed);
-  final num time;
-  final num speed;
+  LiveData(
+    this.time,
+    this.speed,
+    this.tradeType,
+  );
+  final int time;
+  final double speed;
+  final TradeType tradeType;
 }
+
+enum TradeType { buy, sell }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:simulator_of_trading/widgets/appbar_custom.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simulator_of_trading/page/main/main_page.dart';
+import 'package:simulator_of_trading/page/trade/widget/balance.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:svg_flutter/svg.dart';
 
 class Background extends StatefulWidget {
   const Background({Key? key}) : super(key: key);
@@ -18,12 +21,16 @@ class _BackgroundState extends State<Background> {
     "assets/images/background/background 4.png",
     "assets/images/background/background 5.png",
   ];
-  int? selectedBackgroundIndex; // Индекс выбранного фона
-  bool isBackgroundPurchased = false; // Флаг, указывающий, куплен ли фон
+  final List<int> backgroundPrices = [0, 12000, 14000, 15000, 17000];
+  List<bool> isBackgroundPurchasedList = [true, false, false, false, false];
+
+  int selectedBackgroundIndex = 0;
+  int userBalance = 0;
 
   @override
   void initState() {
     super.initState();
+    _loadData();
   }
 
   void onPageChanged(int index) {
@@ -33,45 +40,142 @@ class _BackgroundState extends State<Background> {
   }
 
   void buyBackground(int index) {
-    // Здесь вы можете реализовать логику покупки фона, например, вычитать валюту пользователя и сохранять выбранный фон.
-    setState(() {
-      selectedBackgroundIndex = index;
-      isBackgroundPurchased = true;
-    });
-  }
+    if (!isBackgroundPurchasedList[index] &&
+        userBalance >= backgroundPrices[index]) {
+      print("Before Purchase: User Balance - $userBalance");
 
-  String getButtonText() {
-    // Логика отображения текста кнопки в зависимости от выбранного и купленного фона
-    if (selectedBackgroundIndex != null) {
-      return 'Selected';
+      setState(() {
+        // Вычитаем стоимость из баланса пользователя, используя параметр 'index'
+        userBalance -= backgroundPrices[index];
+
+        print("After Purchase: User Balance - $userBalance");
+
+        // Обновляем 'selectedBackgroundIndex' после успешной покупки
+        selectedBackgroundIndex = index;
+
+        // Устанавливаем фон как купленный
+        isBackgroundPurchasedList[index] = true;
+      });
     } else {
-      return isBackgroundPurchased ? 'Selected' : 'Buy Background';
+      // Обработка случаев недостаточных средств или других ошибок
     }
   }
 
-  Color getButtonBorderColor() {
-    return isBackgroundPurchased
-        ? Colors.green
-        : Colors.blue; // Замените на цвет, который вы хотите использовать
+  void _saveData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    prefs.setInt('selectedBackgroundIndex', selectedBackgroundIndex);
+    prefs.setInt('userBalance', userBalance);
+
+    for (int i = 0; i < isBackgroundPurchasedList.length; i++) {
+      prefs.setBool('isBackgroundPurchased_$i', isBackgroundPurchasedList[i]);
+    }
+  }
+
+  void _loadData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      selectedBackgroundIndex = prefs.getInt('selectedBackgroundIndex') ?? 0;
+      userBalance = prefs.getInt('userBalance') ?? 10000;
+
+      for (int i = 0; i < isBackgroundPurchasedList.length; i++) {
+        isBackgroundPurchasedList[i] =
+            prefs.getBool('isBackgroundPurchased_$i') ?? false;
+      }
+    });
+
+    // Добавьте этот блок кода для установки купленных фонов в true,
+    // если соответствующая цена фона равна 0 (нулевая цена фона).
+    for (int i = 0; i < backgroundPrices.length; i++) {
+      if (backgroundPrices[i] == 0) {
+        setState(() {
+          isBackgroundPurchasedList[i] = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _saveData(); // Save data when the widget is disposed
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadData();
+  }
+
+  void clearSharedPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Этот метод удаляет все данные из SharedPreferences
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(50.0),
-        child: const AppbarCustom(),
+      appBar: AppBar(
+        title: Padding(
+          padding: const EdgeInsets.only(right: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              InkWell(
+                onTap: () {
+                  clearSharedPreferences();
+                },
+                child: Text('123'),
+              ),
+              Row(
+                children: [
+                  InkWell(
+                    autofocus: true,
+                    child: SvgPicture.asset(
+                      'assets/images/svg/home.svg',
+                      width: 28,
+                      height: 28,
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MainPage(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 24,
+                  ),
+                ],
+              ),
+              Balance(onBalanceChanged: (balance) {
+                setState(() {
+                  userBalance = balance;
+                });
+              })
+            ],
+          ),
+        ),
+        toolbarHeight: 72,
+        backgroundColor: const Color(0xff0A1730),
       ),
       body: Stack(
         children: [
           PageView.builder(
+            key: PageStorageKey<String>('background_page_key'),
             controller: controller,
             itemCount: images.length,
             itemBuilder: (context, index) {
-              return Image.asset(
-                images[index],
-                fit: BoxFit.cover,
-                key: UniqueKey(),
+              return Opacity(
+                opacity: isBackgroundPurchasedList[index] ? 1.0 : 0.5,
+                child: Image.asset(
+                  images[index],
+                  fit: BoxFit.cover,
+                  key: ValueKey<String>(
+                    images[index],
+                  ),
+                ),
               );
             },
             onPageChanged: onPageChanged,
@@ -95,7 +199,7 @@ class _BackgroundState extends State<Background> {
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 0,
             right: 0,
             bottom: 146,
@@ -117,18 +221,95 @@ class _BackgroundState extends State<Background> {
             left: 0,
             right: 0,
             bottom: 58,
-            child: ElevatedButton(
-              onPressed: selectedBackgroundIndex != null
-                  ? null
-                  : () => buyBackground(selectedBackgroundIndex ?? 0),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.black,
-                backgroundColor: Colors.white, // Цвет текста кнопки
-                side: BorderSide(
-                    color: getButtonBorderColor()), // Цвет границы кнопки
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 24),
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: isBackgroundPurchasedList[selectedBackgroundIndex]
+                    ? null
+                    : LinearGradient(
+                        begin: Alignment(1.00, 0.03),
+                        end: Alignment(-1, -0.03),
+                        colors: [
+                          Color(0xFF06B1FC),
+                          Color(0xFF0017FF),
+                          Color(0xFF18BBD7)
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isBackgroundPurchasedList[selectedBackgroundIndex]
+                      ? Colors.transparent
+                      : Colors.blue,
+                ),
               ),
-              child: Text(
-                getButtonText(),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    buyBackground(selectedBackgroundIndex);
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: isBackgroundPurchasedList[selectedBackgroundIndex]
+                        ? Container(
+                            height: 50,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Color(0xff0A1730),
+                              border: Border.all(color: Colors.white),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'CHOOSED',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontFamily: 'SFProDisplay',
+                                  fontWeight: FontWeight.w600,
+                                  height: 0,
+                                  letterSpacing: 0.40,
+                                ),
+                              ),
+                            ),
+                          )
+                        : isBackgroundPurchasedList[selectedBackgroundIndex]
+                            ? Container(
+                                height: 50,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Выбрать',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontFamily: 'SFProDisplay',
+                                      fontWeight: FontWeight.w600,
+                                      height: 0,
+                                      letterSpacing: 0.40,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                '${backgroundPrices[selectedBackgroundIndex]}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontFamily: 'SFProDisplay',
+                                  fontWeight: FontWeight.w600,
+                                  height: 0,
+                                  letterSpacing: 0.40,
+                                ),
+                              ),
+                  ),
+                ),
               ),
             ),
           ),

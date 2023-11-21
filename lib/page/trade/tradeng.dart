@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
 import 'package:simulator_of_trading/page/trade/graph/linde.dart';
@@ -416,6 +415,17 @@ class _TradengState extends State<Tradeng> {
     return times;
   }
 
+  int reward = 0; // Добавляем переменную для хранения значения Reward
+  void updateReward(int newReward) {
+    setState(() {
+      reward = newReward;
+    });
+  }
+
+  void addMarker(Offset position) {
+    lindeKey.currentState?.setMarker(position.dy);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -499,6 +509,13 @@ class _TradengState extends State<Tradeng> {
               height: 479,
               child: Linde(
                 key: lindeKey,
+                onBuyTrade: (newSpeed) {
+                  setState(() {});
+                  updateReward(
+                    newSpeed.toInt(),
+                  );
+                  return reward;
+                },
               ),
             ),
             const SizedBox(
@@ -625,7 +642,7 @@ class _TradengState extends State<Tradeng> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -642,7 +659,7 @@ class _TradengState extends State<Tradeng> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '-',
+                        '$reward',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 19,
