@@ -1,3 +1,7 @@
+// ignore_for_file: unnecessary_null_comparison
+
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
 import 'package:simulator_of_trading/page/trade/graph/linde.dart';
@@ -13,7 +17,6 @@ class Tradeng extends StatefulWidget {
 
 class _TradengState extends State<Tradeng> {
   final GlobalKey<LindeState> lindeKey = GlobalKey<LindeState>();
-
   List<Offset> markers = [];
   final List<String> options = [
     'EUR/USD',
@@ -39,7 +42,8 @@ class _TradengState extends State<Tradeng> {
   int selectedTimeIndex = 0;
   int selectedOptionIndex = 0;
   int selectedPriceIndex = 0;
-
+  Timer? chartTimer;
+  bool isTimerRunning = false;
   void _showBottomSheet(
     BuildContext context,
   ) {
@@ -289,6 +293,9 @@ class _TradengState extends State<Tradeng> {
   }
 
   void _showTime(BuildContext context) {
+    if (isTimerRunning) {
+      return; // Если таймер работает, не показывать диалог выбора времени
+    }
     List<String> times = generateTimeOptions();
     showModalBottomSheet(
       context: context,
@@ -345,17 +352,18 @@ class _TradengState extends State<Tradeng> {
                             padding: const EdgeInsets.all(16),
                             clipBehavior: Clip.antiAlias,
                             decoration: BoxDecoration(
-                              gradient: index == selectedTimeIndex
-                                  ? const LinearGradient(
-                                      begin: Alignment(1.00, 0.03),
-                                      end: Alignment(-1, -0.03),
-                                      colors: [
-                                        Color(0xFF06B1FC),
-                                        Color(0xFF0017FF),
-                                        Color(0xFF18BBD7)
-                                      ],
-                                    )
-                                  : null,
+                              gradient:
+                                  index == selectedTimeIndex && !isTimerRunning
+                                      ? const LinearGradient(
+                                          begin: Alignment(1.00, 0.03),
+                                          end: Alignment(-1, -0.03),
+                                          colors: [
+                                            Color(0xFF06B1FC),
+                                            Color(0xFF0017FF),
+                                            Color(0xFF18BBD7)
+                                          ],
+                                        )
+                                      : null,
                               color: index != selectedTimeIndex
                                   ? null
                                   : Colors.white,
@@ -410,9 +418,51 @@ class _TradengState extends State<Tradeng> {
     );
   }
 
+  void _startChartTimer() {
+    if (chartTimer != null && chartTimer!.isActive) {
+      chartTimer!.cancel();
+    }
+
+    int durationInSeconds = int.parse(selectedTime.split(':')[0]) * 60;
+    setState(() {
+      isTimerRunning = true;
+    });
+    chartTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (durationInSeconds == 0) {
+          timer.cancel();
+          // Здесь вызывайте метод, который обновляет данные на графике
+          lindeKey.currentState?.updateDataSource(chartTimer!);
+          // Также уберите маркер
+          lindeKey.currentState?.setMarker(0);
+          if (selectedTime != '00:30') {
+            selectedTime = '00:30';
+          }
+          setState(() {
+            isTimerRunning = false;
+          });
+        } else {
+          durationInSeconds--;
+          int minutes = durationInSeconds ~/ 60;
+          int seconds = durationInSeconds % 60;
+          selectedTime =
+              '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+        }
+      });
+    });
+
+    print(selectedTime);
+  }
+
   List<String> generateTimeOptions() {
     List<String> times = ['00:30', '01:00', '02:00', '05:00', '10:00'];
     return times;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _startChartTimer();
   }
 
   int reward = 0; // Добавляем переменную для хранения значения Reward
@@ -622,9 +672,10 @@ class _TradengState extends State<Tradeng> {
                                 letterSpacing: 0.32,
                               ),
                             ),
-                            SvgPicture.asset(
-                              'assets/images/svg/down.svg',
-                            ),
+                            if (isTimerRunning == false)
+                              SvgPicture.asset(
+                                'assets/images/svg/down.svg',
+                              ),
                           ],
                         ),
                       ),
@@ -687,6 +738,7 @@ class _TradengState extends State<Tradeng> {
                     onPressed: () {
                       setState(() {
                         lindeKey.currentState?.buyTrade();
+                        _startChartTimer();
                       });
                       print('Buy button pressed');
                     },
@@ -721,6 +773,7 @@ class _TradengState extends State<Tradeng> {
                     onPressed: () {
                       setState(() {
                         lindeKey.currentState?.sellTrade();
+                        _startChartTimer();
                       });
                     },
                     child: const Text(

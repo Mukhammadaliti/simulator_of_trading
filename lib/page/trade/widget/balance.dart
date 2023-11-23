@@ -28,7 +28,7 @@ class _BalanceState extends State<Balance> {
 
   // Запуск ежедневной задачи
   void startDailyTask() {
-    const oneDay = const Duration(seconds: 3);
+    const oneDay = const Duration(minutes: 3);
     Timer.periodic(oneDay, (Timer t) {
       // Ваш код для увеличения баланса
       increaseBalance();
