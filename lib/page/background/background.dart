@@ -30,6 +30,7 @@ class _BackgroundState extends State<Background> {
   @override
   void initState() {
     super.initState();
+
     _loadData();
   }
 
@@ -47,17 +48,17 @@ class _BackgroundState extends State<Background> {
       setState(() {
         // Вычитаем стоимость из баланса пользователя, используя параметр 'index'
         userBalance -= backgroundPrices[index];
-
         print("After Purchase: User Balance - $userBalance");
-
         // Обновляем 'selectedBackgroundIndex' после успешной покупки
         selectedBackgroundIndex = index;
 
         // Устанавливаем фон как купленный
         isBackgroundPurchasedList[index] = true;
       });
+      print("After Purchase: User Balance - $userBalance");
     } else {
-      // Обработка случаев недостаточных средств или других ошибок
+      // Обработка случаев недостаточных средств или других ошибок\
+      print("Не хватает Баланс$userBalance");
     }
   }
 

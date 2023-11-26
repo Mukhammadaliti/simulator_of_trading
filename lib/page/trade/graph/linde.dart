@@ -1,11 +1,18 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:simulator_of_trading/page/trade/tradeng.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class Linde extends StatefulWidget {
-  final Function(double) onBuyTrade;
-  Linde({Key? key, required this.onBuyTrade}) : super(key: key);
+  final CurrencyPair currencyPair;
+  final Function(double) onUpdateReward;
+
+  Linde({
+    Key? key,
+    required this.currencyPair,
+    required this.onUpdateReward,
+  }) : super(key: key);
 
   @override
   LindeState createState() => LindeState();
@@ -17,17 +24,38 @@ final List<Color> gradientColor = [
 ];
 
 class LindeState extends State<Linde> {
-  late List<LiveData> chartData;
+  List<LiveData>? chartData;
   late int lastDataIndex;
   double? previousMarkerY;
   late Timer _timer;
   List<LiveData> buyTrades = [];
   List<LiveData> sellTrades = [];
   Map<int, int> markersTimestamps = {};
+  double previousSpeed = 0.0;
+  bool hasOpenTrade = false;
+  TradeType? lastTradeType;
+  double currentReward = 0.0;
+  void updateReward(double newSpeed, TradeType tradeType) {
+    if (hasOpenTrade) {
+      if ((tradeType == TradeType.buy && newSpeed > previousSpeed!) ||
+          (tradeType == TradeType.sell && newSpeed < previousSpeed!)) {
+        currentReward = 2.0;
+        widget.onUpdateReward(currentReward);
+      } else {
+        currentReward = 0.0;
+        widget.onUpdateReward(currentReward);
+      }
+
+      previousSpeed = newSpeed;
+    } else {
+      currentReward = 0.0;
+      widget.onUpdateReward(currentReward);
+    }
+  }
+
   void setMarker(double y) {
     if (previousMarkerY != null) {
       double newSpeed = (y - previousMarkerY!);
-      widget.onBuyTrade(newSpeed > 0 ? 2 : 0);
     }
 
     previousMarkerY = y;
@@ -35,21 +63,29 @@ class LindeState extends State<Linde> {
 
   void buyTrade() {
     setState(() {
+      hasOpenTrade = true;
       double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
-      double newSpeed = chartData[lastDataIndex].speed + randomChange;
-      newSpeed = newSpeed.clamp(1.07086, 1.17086);
+      double newSpeed = chartData![lastDataIndex].speed + randomChange;
+      newSpeed = newSpeed.clamp(
+        getMinValue(),
+        getMaxValue(),
+      );
 
       LiveData newTrade = LiveData(time++, newSpeed, TradeType.buy);
-      chartData.add(newTrade);
-      lastDataIndex = chartData.length - 1;
-      if (chartData.length > 19) {
-        chartData.removeAt(0);
+      chartData!.add(newTrade);
+      lastDataIndex = chartData!.length - 1;
+      if (chartData!.length > 19) {
+        chartData!.removeAt(0);
         lastDataIndex--;
       }
+      hasOpenTrade = true;
 
       buyTrades.add(newTrade);
       markersTimestamps[newTrade.time.toInt()] =
           DateTime.now().millisecondsSinceEpoch;
+
+      // Вызовите функцию updateReward при каждой сделке
+      updateReward(newSpeed, TradeType.buy);
 
       _timer = Timer(Duration(seconds: 10), () {
         removeExpiredMarkers();
@@ -57,28 +93,26 @@ class LindeState extends State<Linde> {
     });
   }
 
-  double getReward() {
-    // Возвращаем reward текущего состояния
-    return widget.onBuyTrade(chartData[lastDataIndex].speed);
-  }
-
   void sellTrade() {
     setState(() {
       double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
-      double newSpeed = chartData[lastDataIndex].speed + randomChange;
-      newSpeed = newSpeed.clamp(1.07086, 1.17086);
+      double newSpeed = chartData![lastDataIndex].speed + randomChange;
+      newSpeed = newSpeed.clamp(getMinValue(), getMaxValue());
 
       LiveData newTrade = LiveData(time++, newSpeed, TradeType.sell);
-      chartData.add(newTrade);
-      lastDataIndex = chartData.length - 1;
-      if (chartData.length > 19) {
-        chartData.removeAt(0);
+      chartData!.add(newTrade);
+      lastDataIndex = chartData!.length - 1;
+      if (chartData!.length > 19) {
+        chartData!.removeAt(0);
         lastDataIndex--;
       }
-
+      hasOpenTrade = true;
       sellTrades.add(newTrade);
       markersTimestamps[newTrade.time.toInt()] =
           DateTime.now().millisecondsSinceEpoch;
+
+      // Обновляем reward при продаже
+      updateReward(newSpeed, TradeType.sell);
 
       _timer = Timer(Duration(seconds: 10), () {
         removeExpiredMarkers();
@@ -107,16 +141,15 @@ class LindeState extends State<Linde> {
       keysToRemove.forEach((key) {
         buyTrades.removeWhere((marker) => marker.time.toInt() == key);
         sellTrades.removeWhere((trade) => trade.time.toInt() == key);
-
         markersTimestamps.remove(key);
       });
     });
   }
 
   void initState() {
-    chartData = getChartData();
-    lastDataIndex = chartData.length - 1;
-    Timer.periodic(const Duration(seconds: 2), updateDataSource);
+    chartData = getChartData(widget.currencyPair!);
+    lastDataIndex = chartData!.length - 1;
+    // Timer.periodic(const Duration(seconds: 2), updateDataSource);
     super.initState();
   }
 
@@ -133,13 +166,13 @@ class LindeState extends State<Linde> {
       plotAreaBorderWidth: 0.0,
       series: <CartesianSeries<LiveData, int>>[
         LineSeries<LiveData, int>(
-          dataSource: chartData,
+          dataSource: chartData!,
           color: Colors.white,
           xValueMapper: (LiveData sales, _) => sales.time.toInt(),
           yValueMapper: (LiveData sales, _) => sales.speed,
         ),
         LineSeries<LiveData, int>(
-          dataSource: [chartData[lastDataIndex]],
+          dataSource: [chartData![lastDataIndex]],
           xValueMapper: (LiveData sales, _) => sales.time.toInt(),
           yValueMapper: (LiveData sales, _) => sales.speed,
           markerSettings: MarkerSettings(
@@ -166,7 +199,7 @@ class LindeState extends State<Linde> {
           ),
         ),
         LineSeries<LiveData, int>(
-          dataSource: chartData,
+          dataSource: chartData!,
           color: Colors.white,
           xValueMapper: (LiveData sales, _) => sales.time.toInt(),
           yValueMapper: (LiveData sales, _) => sales.speed,
@@ -228,28 +261,115 @@ class LindeState extends State<Linde> {
   }
 
   int time = 19;
+
   void updateDataSource(Timer timer) {
     setState(() {
       double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
-      double newSpeed = chartData[lastDataIndex].speed + randomChange;
-      newSpeed = newSpeed.clamp(1.07086, 1.17086);
-      widget.onBuyTrade(newSpeed);
+      double newSpeed = chartData![lastDataIndex].speed + randomChange;
 
-      chartData.add(LiveData(time++, newSpeed, TradeType.buy));
-      lastDataIndex = chartData.length - 1;
-      if (chartData.length > 19) {
-        chartData.removeAt(0);
+      double minValue = getMinValue();
+      double maxValue = getMaxValue();
+
+      newSpeed = newSpeed.clamp(minValue, maxValue);
+
+      chartData!.add(LiveData(time++, newSpeed,
+          TradeType.buy)); // Изменено: используйте текущее значение времени
+      lastDataIndex = chartData!.length - 1;
+      if (chartData!.length > 19) {
+        chartData!.removeAt(0);
         lastDataIndex--;
       }
     });
   }
 
-  List<LiveData> getChartData() {
+  double getMinValue() {
+    switch (widget.currencyPair!.name) {
+      case 'EUR/USD':
+        return 1.07086;
+      case 'USD/JPY':
+        return 150.0;
+      case 'AUD/USD':
+        return 0.64258;
+      case 'USD/CAD':
+        return 1.37656;
+      case 'USD/CHF':
+        return 0.89964;
+      case 'USD/CNH':
+        return 7.28920;
+      case 'GBP/USD':
+        return 1.22912;
+      default:
+        return 1.07086; // Значение по умолчанию
+    }
+  }
+
+  double getMaxValue() {
+    switch (widget.currencyPair!.name) {
+      case 'EUR/USD':
+        return 1.17086;
+      case 'USD/JPY':
+        return 151.0;
+      case 'AUD/USD':
+        return 0.74258;
+      case 'USD/CAD':
+        return 1.47656;
+      case 'USD/CHF':
+        return 0.99964;
+      case 'USD/CNH':
+        return 7.38920;
+      case 'GBP/USD':
+        return 1.32912;
+      default:
+        return 1.07086; // Значение по умолчанию
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant Linde oldWidget) {
+    if (widget.currencyPair != oldWidget.currencyPair) {
+      setState(() {
+        // Очищаем списки при изменении валютной пары
+        buyTrades.clear();
+        sellTrades.clear();
+
+        // Обновляем график при изменении валютной пары
+        chartData = getChartData(widget.currencyPair!);
+        lastDataIndex = chartData!.length - 1;
+        time = chartData!.isEmpty ? 0 : chartData!.last.time + 1;
+      });
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  List<LiveData> getChartData(CurrencyPair currencyPair) {
+    double startValue = 1.0;
+
+    if (currencyPair.name == 'EUR/USD') {
+      startValue = 1.07086;
+    } else if (currencyPair.name == 'USD/JPY') {
+      startValue = 150.0;
+    } else if (currencyPair.name == 'AUD/USD') {
+      startValue = 0.64258;
+    } else if (currencyPair.name == 'USD/CAD') {
+      startValue = 1.37656;
+    } else if (currencyPair.name == 'USD/CHF') {
+      startValue = 0.89964;
+    } else if (currencyPair.name == 'USD/CNH') {
+      startValue = 7.28920;
+    } else if (currencyPair.name == 'GBP/USD') {
+      startValue = 1.22912;
+    }
+
     List<LiveData> randomData = [];
     for (int i = 0; i < 20; i++) {
-      double randomSpeed =
-          1.07086 + math.Random().nextDouble() * (1.17086 - 1.07086);
-      randomData.add(LiveData(i, randomSpeed, TradeType.buy));
+      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+      double newSpeed = startValue + randomChange;
+      newSpeed = newSpeed.clamp(
+        getMinValue(),
+        getMaxValue(),
+      );
+
+      randomData.add(LiveData(i, newSpeed, TradeType.buy));
     }
     return randomData;
   }

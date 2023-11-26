@@ -1,7 +1,5 @@
 // ignore_for_file: unnecessary_null_comparison
-
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
 import 'package:simulator_of_trading/page/trade/graph/linde.dart';
@@ -9,7 +7,11 @@ import 'package:simulator_of_trading/page/trade/widget/balance.dart';
 import 'package:svg_flutter/svg.dart';
 
 class Tradeng extends StatefulWidget {
-  const Tradeng({Key? key}) : super(key: key);
+  final Function(int)? onAmountSelected;
+  const Tradeng({
+    Key? key,
+    this.onAmountSelected,
+  }) : super(key: key);
 
   @override
   _TradengState createState() => _TradengState();
@@ -18,15 +20,8 @@ class Tradeng extends StatefulWidget {
 class _TradengState extends State<Tradeng> {
   final GlobalKey<LindeState> lindeKey = GlobalKey<LindeState>();
   List<Offset> markers = [];
-  final List<String> options = [
-    'EUR/USD',
-    'USD/JPY',
-    'AUD/USD ',
-    'USD/CAD',
-    'USD/CHF',
-    'USD/CNH',
-    'GBP/USD',
-  ];
+  late List<CurrencyPair> currencyPairs;
+  late CurrencyPair selectedCurrencyPair;
   final List<String> price = [
     '20',
     '50',
@@ -43,6 +38,7 @@ class _TradengState extends State<Tradeng> {
   int selectedOptionIndex = 0;
   int selectedPriceIndex = 0;
   Timer? chartTimer;
+  double reward = 0.0;
   bool isTimerRunning = false;
   void _showBottomSheet(
     BuildContext context,
@@ -93,7 +89,7 @@ class _TradengState extends State<Tradeng> {
                     Expanded(
                       child: ListView.builder(
                           controller: controller,
-                          itemCount: options.length,
+                          itemCount: currencyPairs.length,
                           itemBuilder: (BuildContext context, int index) {
                             return ListTile(
                               title: Container(
@@ -130,7 +126,7 @@ class _TradengState extends State<Tradeng> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Text(
-                                      options[index],
+                                      currencyPairs[index].name.toString(),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
@@ -150,10 +146,12 @@ class _TradengState extends State<Tradeng> {
                               onTap: () {
                                 setState(() {
                                   selectedOptionIndex = index;
-                                  selectedOption = options[index];
+                                  selectedOption =
+                                      currencyPairs[index].name.toString();
 
                                   Navigator.pop(context);
                                 });
+                                print(currencyPairs[selectedOptionIndex].name);
                               },
                             );
                           }),
@@ -217,7 +215,7 @@ class _TradengState extends State<Tradeng> {
                     Expanded(
                       child: ListView.builder(
                           controller: controller,
-                          itemCount: options.length,
+                          itemCount: price.length,
                           itemBuilder: (BuildContext context, int index) {
                             return ListTile(
                               title: Container(
@@ -275,6 +273,8 @@ class _TradengState extends State<Tradeng> {
                                 setState(() {
                                   selectedPriceIndex = index;
                                   selectedPrice = price[index];
+                                  widget.onAmountSelected
+                                      ?.call(int.parse(selectedPrice));
                                   Navigator.pop(context);
                                 });
                               },
@@ -423,35 +423,58 @@ class _TradengState extends State<Tradeng> {
       chartTimer!.cancel();
     }
 
-    int durationInSeconds = int.parse(selectedTime.split(':')[0]) * 60;
+    List<String> timeParts = selectedTime.split(':');
+    int minutes = int.parse(timeParts[0]);
+    int seconds = int.parse(timeParts[1]);
+
+    int totalDurationInSeconds = minutes * 60 + seconds;
+    int remainingDurationInSeconds = totalDurationInSeconds;
+
     setState(() {
       isTimerRunning = true;
     });
-    chartTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+
+    int updateInterval;
+
+    if (selectedTime == '00:30') {
+      updateInterval = 3; // Обновлять каждую секунду
+    } else if (selectedTime == '01:00') {
+      updateInterval = 10; // Обновлять каждые 3 секунды
+    } else if (selectedTime == '02:00') {
+      updateInterval = 20; // Обновлять каждые 6 секунд
+    } else if (selectedTime == '05:00') {
+      updateInterval = 60; // Обновлять каждые 15 секунд
+    } else if (selectedTime == '10:00') {
+      updateInterval = 80; // Обновлять каждые 30 секунд
+    } else {
+      updateInterval = 10; // Значение по умолчанию
+    }
+
+    // Основной таймер для обновления графика в соответствии с интервалом
+    chartTimer = Timer.periodic(Duration(seconds: updateInterval), (timer) {
+      lindeKey.currentState?.updateDataSource(timer);
+    });
+
+    // Таймер для уменьшения времени каждую секунду
+    Timer countDownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
-        if (durationInSeconds == 0) {
+        if (remainingDurationInSeconds == 0) {
           timer.cancel();
-          // Здесь вызывайте метод, который обновляет данные на графике
-          lindeKey.currentState?.updateDataSource(chartTimer!);
-          // Также уберите маркер
-          lindeKey.currentState?.setMarker(0);
-          if (selectedTime != '00:30') {
-            selectedTime = '00:30';
-          }
-          setState(() {
-            isTimerRunning = false;
+          isTimerRunning = false;
+          selectedTime = '00:30';
+          // Начать таймер для обновления графика каждую секунду
+          chartTimer = Timer.periodic(Duration(seconds: 1), (chartTimer) {
+            lindeKey.currentState?.updateDataSource(chartTimer);
           });
         } else {
-          durationInSeconds--;
-          int minutes = durationInSeconds ~/ 60;
-          int seconds = durationInSeconds % 60;
+          remainingDurationInSeconds--;
+          int minutes = remainingDurationInSeconds ~/ 60;
+          int seconds = remainingDurationInSeconds % 60;
           selectedTime =
               '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
         }
       });
     });
-
-    print(selectedTime);
   }
 
   List<String> generateTimeOptions() {
@@ -463,17 +486,16 @@ class _TradengState extends State<Tradeng> {
   void initState() {
     super.initState();
     _startChartTimer();
-  }
-
-  int reward = 0; // Добавляем переменную для хранения значения Reward
-  void updateReward(int newReward) {
-    setState(() {
-      reward = newReward;
-    });
-  }
-
-  void addMarker(Offset position) {
-    lindeKey.currentState?.setMarker(position.dy);
+    currencyPairs = [
+      CurrencyPair('EUR/USD'),
+      CurrencyPair('USD/JPY'),
+      CurrencyPair('AUD/USD'),
+      CurrencyPair('USD/CAD'),
+      CurrencyPair('USD/CHF'),
+      CurrencyPair('USD/CNH'),
+      CurrencyPair('GBP/USD'),
+    ];
+    selectedCurrencyPair = currencyPairs.first;
   }
 
   @override
@@ -558,13 +580,13 @@ class _TradengState extends State<Tradeng> {
               width: MediaQuery.of(context).size.width,
               height: 479,
               child: Linde(
+                currencyPair: currencyPairs[selectedOptionIndex],
                 key: lindeKey,
-                onBuyTrade: (newSpeed) {
-                  setState(() {});
-                  updateReward(
-                    newSpeed.toInt(),
-                  );
-                  return reward;
+                onUpdateReward: (double newReward) {
+                  setState(() {
+                    reward = newReward;
+                    print(reward);
+                  });
                 },
               ),
             ),
@@ -710,7 +732,7 @@ class _TradengState extends State<Tradeng> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        '$reward',
+                        reward.toString(),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 19,
@@ -772,6 +794,7 @@ class _TradengState extends State<Tradeng> {
                     ),
                     onPressed: () {
                       setState(() {
+                        // Вызываем метод для вычета суммы из баланса перед совершением сделки "Sell"
                         lindeKey.currentState?.sellTrade();
                         _startChartTimer();
                       });
@@ -796,5 +819,15 @@ class _TradengState extends State<Tradeng> {
         ),
       ),
     );
+  }
+}
+
+class CurrencyPair {
+  final String name;
+
+  CurrencyPair(this.name);
+  @override
+  String toString() {
+    return name;
   }
 }

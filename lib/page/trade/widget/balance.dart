@@ -28,7 +28,7 @@ class _BalanceState extends State<Balance> {
 
   // Запуск ежедневной задачи
   void startDailyTask() {
-    const oneDay = const Duration(minutes: 3);
+    const oneDay = const Duration(minutes: 1);
     Timer.periodic(oneDay, (Timer t) {
       // Ваш код для увеличения баланса
       increaseBalance();
@@ -43,7 +43,7 @@ class _BalanceState extends State<Balance> {
     setState(() {
       currentBalance += 1000;
       prefs.setInt('balance', currentBalance);
-
+      print('$currentBalance tvoy balance');
       // Проверка, что колбэк не является null перед его вызовом
       widget.onBalanceChanged?.call(currentBalance);
     });
@@ -80,7 +80,7 @@ class _BalanceState extends State<Balance> {
               return CircularProgressIndicator();
             }
             int currentBalance =
-                (snapshot.data as SharedPreferences).getInt('balance') ?? 0;
+                (snapshot.data as SharedPreferences).getInt('balance') ?? 10000;
             return Text(
               '$currentBalance',
               textAlign: TextAlign.right,
