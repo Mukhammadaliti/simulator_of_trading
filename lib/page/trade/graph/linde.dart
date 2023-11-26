@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:simulator_of_trading/page/trade/tradeng.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -221,7 +222,7 @@ class LindeState extends State<Linde> {
         ),
         ScatterSeries<LiveData, int>(
           dataSource: sellTrades,
-          xValueMapper: (LiveData marker, _) => marker.time.toInt(),
+          xValueMapper: (LiveData sales, _) => sales.time,
           yValueMapper: (LiveData marker, _) => marker.speed,
           color: Colors.red,
           markerSettings: MarkerSettings(
@@ -239,10 +240,16 @@ class LindeState extends State<Linde> {
           width: 1,
           color: Colors.white.withOpacity(0.3),
         ),
+        interval: 4,
+        axisLabelFormatter: (AxisLabelRenderDetails details) {
+          final minutes = (details.value ~/ 60).toString().padLeft(2, '0');
+          final secondsInt = (details.value % 60).toInt();
+          final seconds = secondsInt.toString().padLeft(2, '0');
+
+          return ChartAxisLabel('$minutes:$seconds', TextStyle());
+        },
         edgeLabelPlacement: EdgeLabelPlacement.shift,
         borderColor: Colors.white.withOpacity(0.3),
-        interval: 3,
-        title: AxisTitle(text: 'Time (seconds)'),
       ),
       primaryYAxis: NumericAxis(
         opposedPosition: true,
