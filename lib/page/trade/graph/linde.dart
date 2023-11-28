@@ -40,18 +40,25 @@ class LindeState extends State<Linde> {
     if (hasOpenTrade) {
       if ((tradeType == TradeType.buy && newSpeed > previousSpeed!) ||
           (tradeType == TradeType.sell && newSpeed < previousSpeed!)) {
-        currentReward = 2.0;
-        widget.onUpdateReward(currentReward);
+        setState(() {
+          currentReward = 2.0;
+          widget.onUpdateReward(currentReward);
+        });
       } else {
-        currentReward = 0.0;
-        widget.onUpdateReward(currentReward);
+        setState(() {
+          widget.onUpdateReward(currentReward);
+          currentReward = 0.0;
+        });
       }
 
       previousSpeed = newSpeed;
     } else {
-      currentReward = 0.0;
-      widget.onUpdateReward(currentReward);
+      setState(() {
+        currentReward = 0.0;
+        widget.onUpdateReward(currentReward);
+      });
     }
+    setState(() {});
   }
 
   void setMarker(double y) {

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
@@ -6,7 +8,8 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:svg_flutter/svg.dart';
 
 class Background extends StatefulWidget {
-  const Background({Key? key}) : super(key: key);
+  final Function(int)? onBalanceChanged;
+  const Background({Key? key, this.onBalanceChanged}) : super(key: key);
 
   @override
   _BackgroundState createState() => _BackgroundState();
@@ -25,7 +28,7 @@ class _BackgroundState extends State<Background> {
   List<bool> isBackgroundPurchasedList = [true, false, false, false, false];
 
   int selectedBackgroundIndex = 0;
-  int userBalance = 0;
+  late int userBalance;
 
   @override
   void initState() {
@@ -48,17 +51,23 @@ class _BackgroundState extends State<Background> {
       setState(() {
         // Вычитаем стоимость из баланса пользователя, используя параметр 'index'
         userBalance -= backgroundPrices[index];
-        print("After Purchase: User Balance - $userBalance");
+
         // Обновляем 'selectedBackgroundIndex' после успешной покупки
         selectedBackgroundIndex = index;
 
         // Устанавливаем фон как купленный
         isBackgroundPurchasedList[index] = true;
+
+        // Сохраняем изменения в SharedPreferences
+        _saveData();
+
+        // Перезагружаем баланс
+        widget.onBalanceChanged?.call(userBalance);
+        print("After Purchase: User Balance - $userBalance");
       });
-      print("After Purchase: User Balance - $userBalance");
     } else {
-      // Обработка случаев недостаточных средств или других ошибок\
-      print("Не хватает Баланс$userBalance");
+      // Обработка случаев недостаточных средств или других ошибок
+      print("Не хватает баланса $userBalance");
     }
   }
 
@@ -66,7 +75,7 @@ class _BackgroundState extends State<Background> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     prefs.setInt('selectedBackgroundIndex', selectedBackgroundIndex);
-    prefs.setInt('userBalance', userBalance);
+    prefs.setInt('balance', userBalance);
 
     for (int i = 0; i < isBackgroundPurchasedList.length; i++) {
       prefs.setBool('isBackgroundPurchased_$i', isBackgroundPurchasedList[i]);
@@ -78,7 +87,7 @@ class _BackgroundState extends State<Background> {
 
     setState(() {
       selectedBackgroundIndex = prefs.getInt('selectedBackgroundIndex') ?? 0;
-      userBalance = prefs.getInt('userBalance') ?? 10000;
+      userBalance = prefs.getInt('balance') ?? 10000;
 
       for (int i = 0; i < isBackgroundPurchasedList.length; i++) {
         isBackgroundPurchasedList[i] =
@@ -95,18 +104,6 @@ class _BackgroundState extends State<Background> {
         });
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _saveData(); // Save data when the widget is disposed
-    super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadData();
   }
 
   void clearSharedPreferences() async {
@@ -150,11 +147,14 @@ class _BackgroundState extends State<Background> {
                   ),
                 ],
               ),
-              Balance(onBalanceChanged: (balance) {
-                setState(() {
-                  userBalance = balance;
-                });
-              })
+              KeyedSubtree(
+                key: UniqueKey(), // Добавьте ключ
+                child: Balance(onBalanceChanged: (balance) {
+                  setState(() {
+                    userBalance = balance;
+                  });
+                }),
+              )
             ],
           ),
         ),
@@ -244,72 +244,71 @@ class _BackgroundState extends State<Background> {
                       : Colors.blue,
                 ),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
+              child: InkWell(
+                onTap: () {
+                  setState(() {
                     buyBackground(selectedBackgroundIndex);
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Center(
-                    child: isBackgroundPurchasedList[selectedBackgroundIndex]
-                        ? Container(
-                            height: 50,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Color(0xff0A1730),
-                              border: Border.all(color: Colors.white),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'CHOOSED',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontFamily: 'SFProDisplay',
-                                  fontWeight: FontWeight.w600,
-                                  height: 0,
-                                  letterSpacing: 0.40,
-                                ),
+                  });
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Center(
+                  child: isBackgroundPurchasedList[selectedBackgroundIndex]
+                      ? Container(
+                          height: 50,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Color(0xff0A1730),
+                            border: Border.all(color: Colors.white),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'CHOOSED',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontFamily: 'SFProDisplay',
+                                fontWeight: FontWeight.w600,
+                                height: 0,
+                                letterSpacing: 0.40,
                               ),
                             ),
-                          )
-                        : isBackgroundPurchasedList[selectedBackgroundIndex]
-                            ? Container(
-                                height: 50,
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Выбрать',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontFamily: 'SFProDisplay',
-                                      fontWeight: FontWeight.w600,
-                                      height: 0,
-                                      letterSpacing: 0.40,
-                                    ),
+                          ),
+                        )
+                      : isBackgroundPurchasedList[selectedBackgroundIndex]
+                          ? Container(
+                              height: 50,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Выбрать',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontFamily: 'SFProDisplay',
+                                    fontWeight: FontWeight.w600,
+                                    height: 0,
+                                    letterSpacing: 0.40,
                                   ),
                                 ),
-                              )
-                            : Text(
-                                '${backgroundPrices[selectedBackgroundIndex]}',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontFamily: 'SFProDisplay',
-                                  fontWeight: FontWeight.w600,
-                                  height: 0,
-                                  letterSpacing: 0.40,
-                                ),
                               ),
-                  ),
+                            )
+                          : Text(
+                              '${backgroundPrices[selectedBackgroundIndex]}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontFamily: 'SFProDisplay',
+                                fontWeight: FontWeight.w600,
+                                height: 0,
+                                letterSpacing: 0.40,
+                              ),
+                            ),
                 ),
               ),
             ),

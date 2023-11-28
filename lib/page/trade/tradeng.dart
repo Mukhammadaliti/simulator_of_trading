@@ -1,6 +1,7 @@
 // ignore_for_file: unnecessary_null_comparison
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
 import 'package:simulator_of_trading/page/trade/graph/linde.dart';
 import 'package:simulator_of_trading/page/trade/widget/balance.dart';
@@ -19,6 +20,8 @@ class Tradeng extends StatefulWidget {
 
 class _TradengState extends State<Tradeng> {
   final GlobalKey<LindeState> lindeKey = GlobalKey<LindeState>();
+  final GlobalKey<BalanceState> balance = GlobalKey<BalanceState>();
+
   List<Offset> markers = [];
   late List<CurrencyPair> currencyPairs;
   late CurrencyPair selectedCurrencyPair;
@@ -275,6 +278,7 @@ class _TradengState extends State<Tradeng> {
                                   selectedPrice = price[index];
                                   widget.onAmountSelected
                                       ?.call(int.parse(selectedPrice));
+
                                   Navigator.pop(context);
                                 });
                               },
@@ -447,24 +451,19 @@ class _TradengState extends State<Tradeng> {
     } else if (selectedTime == '10:00') {
       updateInterval = 80; // Обновлять каждые 30 секунд
     } else {
-      updateInterval = 10; // Значение по умолчанию
+      updateInterval = 1; // Значение по умолчанию
     }
 
-    // Основной таймер для обновления графика в соответствии с интервалом
-    chartTimer = Timer.periodic(Duration(seconds: updateInterval), (timer) {
-      lindeKey.currentState?.updateDataSource(timer);
-    });
-
-    // Таймер для уменьшения времени каждую секунду
+    // Основной таймер для уменьшения времени каждую секунду
     Timer countDownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         if (remainingDurationInSeconds == 0) {
           timer.cancel();
           isTimerRunning = false;
           selectedTime = '00:30';
-          // Начать таймер для обновления графика каждую секунду
-          chartTimer = Timer.periodic(Duration(seconds: 1), (chartTimer) {
-            lindeKey.currentState?.updateDataSource(chartTimer);
+          // Обновление графика каждую секунду после окончания таймера
+          chartTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+            lindeKey.currentState?.updateDataSource(timer);
           });
         } else {
           remainingDurationInSeconds--;
@@ -472,6 +471,11 @@ class _TradengState extends State<Tradeng> {
           int seconds = remainingDurationInSeconds % 60;
           selectedTime =
               '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+          // Обновление графика с интервалом
+          if (remainingDurationInSeconds % updateInterval == 0) {
+            lindeKey.currentState?.updateDataSource(timer);
+          }
         }
       });
     });
@@ -480,6 +484,13 @@ class _TradengState extends State<Tradeng> {
   List<String> generateTimeOptions() {
     List<String> times = ['00:30', '01:00', '02:00', '05:00', '10:00'];
     return times;
+  }
+
+  @override
+  void dispose() {
+    _startChartTimer();
+    // TODO: implement dispose
+    super.dispose();
   }
 
   @override
