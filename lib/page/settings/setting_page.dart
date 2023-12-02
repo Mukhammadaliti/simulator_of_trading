@@ -57,7 +57,6 @@ class _SettingPageState extends State<SettingPage> {
             ],
           ),
         ),
-        toolbarHeight: 72,
         backgroundColor: const Color(0xff0A1730),
       ),
       body: Container(

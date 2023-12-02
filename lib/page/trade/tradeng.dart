@@ -26,7 +26,7 @@ class _TradengState extends State<Tradeng> {
   List<Offset> markers = [];
   late List<CurrencyPair> currencyPairs;
   late CurrencyPair selectedCurrencyPair;
-  double userBalance = 10000;
+  late int userBalance;
   final List<String> price = [
     '20',
     '50',
@@ -38,7 +38,7 @@ class _TradengState extends State<Tradeng> {
   ];
   String selectedOption = 'EUR/USD';
   String selectedPrice = '20';
-  String selectedTime = '00:30';
+  String selectedTime = '00:00';
   int selectedTimeIndex = 0;
   int selectedOptionIndex = 0;
   int selectedPriceIndex = 0;
@@ -278,10 +278,6 @@ class _TradengState extends State<Tradeng> {
                                 setState(() {
                                   selectedPriceIndex = index;
                                   selectedPrice = price[index];
-                                  // Обновление баланса на основе выбранной цены
-                                  int priceValue = int.parse(selectedPrice);
-                                  // Пример расчета: убрать выбранную сумму из баланса
-                                  userBalance -= priceValue;
                                 });
                               },
                             );
@@ -453,7 +449,7 @@ class _TradengState extends State<Tradeng> {
     } else if (selectedTime == '10:00') {
       updateInterval = 80; // Обновлять каждые 30 секунд
     } else {
-      updateInterval = 1; // Значение по умолчанию
+      updateInterval = 10; // Значение по умолчанию
     }
 
     // Основной таймер для уменьшения времени каждую секунду
@@ -514,18 +510,14 @@ class _TradengState extends State<Tradeng> {
   }
 
   void buyTrade() {
-    int selectedPriceInt = int.parse(selectedPrice);
     setState(() {
-      userBalance -= selectedPriceInt; // Вычитаем выбранную цену из баланса
       lindeKey.currentState?.buyTrade();
       _startChartTimer();
     });
   }
 
   void sellTrade() {
-    int selectedPriceInt = int.parse(selectedPrice);
     setState(() {
-      userBalance -= selectedPriceInt; // Вычитаем выбранную цену из баланса
       lindeKey.currentState?.sellTrade();
       _startChartTimer();
     });
@@ -585,7 +577,14 @@ class _TradengState extends State<Tradeng> {
                         },
                         child: Row(
                           children: [
-                            Text(selectedOption),
+                            Text(
+                              selectedOption,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
                             const SizedBox(
                               width: 4,
                             ),
@@ -602,13 +601,15 @@ class _TradengState extends State<Tradeng> {
               KeyedSubtree(
                 key: UniqueKey(), // Добавьте ключ
                 child: Balance(onBalanceChanged: (balance) {
-                  setState(() {});
+                  setState(() {
+                    userBalance = balance;
+                    log('USERBALANCE======>$userBalance');
+                  });
                 }),
               ),
             ],
           ),
         ),
-        toolbarHeight: 72,
         backgroundColor: const Color(0xff0A1730),
       ),
       body: SingleChildScrollView(
@@ -622,7 +623,10 @@ class _TradengState extends State<Tradeng> {
                 key: lindeKey,
                 onUpdateReward: (double newSpeed) {
                   reward = newSpeed;
-                  setState(() {});
+                  setState(() {
+                    print("REEWARD+++++>$reward");
+                    print("SPEED+++++>$newSpeed");
+                  });
                 },
               ),
             ),

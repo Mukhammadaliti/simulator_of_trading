@@ -63,11 +63,6 @@ class BalanceState extends State<Balance> {
     super.dispose();
   }
 
-  void clearBalanceCache() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.remove('balance');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(

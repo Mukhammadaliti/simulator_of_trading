@@ -106,11 +106,6 @@ class _BackgroundState extends State<Background> {
     }
   }
 
-  void clearSharedPreferences() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Этот метод удаляет все данные из SharedPreferences
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,12 +115,6 @@ class _BackgroundState extends State<Background> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              InkWell(
-                onTap: () {
-                  clearSharedPreferences();
-                },
-                child: Text('123'),
-              ),
               Row(
                 children: [
                   InkWell(
@@ -158,7 +147,6 @@ class _BackgroundState extends State<Background> {
             ],
           ),
         ),
-        toolbarHeight: 72,
         backgroundColor: const Color(0xff0A1730),
       ),
       body: Stack(

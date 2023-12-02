@@ -28,7 +28,6 @@ class LindeState extends State<Linde> {
   List<LiveData>? chartData;
   late int lastDataIndex;
   double? previousMarkerY;
-
   List<LiveData> buyTrades = [];
   List<LiveData> sellTrades = [];
   Map<int, int> markersTimestamps = {};
@@ -74,7 +73,7 @@ class LindeState extends State<Linde> {
   void buyTrade() {
     setState(() {
       hasOpenTrade = true;
-      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+      double randomChange = (math.Random().nextDouble() - 0.3) * 0.0001;
       double newSpeed = chartData![lastDataIndex].speed + randomChange;
       newSpeed = newSpeed.clamp(
         getMinValue(),
@@ -101,7 +100,7 @@ class LindeState extends State<Linde> {
 
   void sellTrade() {
     setState(() {
-      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+      double randomChange = (math.Random().nextDouble() - 0.3) * 0.0001;
       double newSpeed = chartData![lastDataIndex].speed + randomChange;
       newSpeed = newSpeed.clamp(getMinValue(), getMaxValue());
 
@@ -265,7 +264,7 @@ class LindeState extends State<Linde> {
 
   void updateDataSource(Timer timer) {
     setState(() {
-      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+      double randomChange = (math.Random().nextDouble() - 0.5) * 0.0001;
       double newSpeed = chartData![lastDataIndex].speed + randomChange;
 
       double minValue = getMinValue();
@@ -363,7 +362,7 @@ class LindeState extends State<Linde> {
 
     List<LiveData> randomData = [];
     for (int i = 0; i < 20; i++) {
-      double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
+      double randomChange = (math.Random().nextDouble() - 0.3) * 0.0001;
       double newSpeed = startValue + randomChange;
       newSpeed = newSpeed.clamp(
         getMinValue(),
