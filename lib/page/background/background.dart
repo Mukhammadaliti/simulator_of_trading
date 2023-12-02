@@ -154,7 +154,7 @@ class _BackgroundState extends State<Background> {
                     userBalance = balance;
                   });
                 }),
-              )
+              ),
             ],
           ),
         ),

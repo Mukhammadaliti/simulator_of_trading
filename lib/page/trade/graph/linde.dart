@@ -28,13 +28,15 @@ class LindeState extends State<Linde> {
   List<LiveData>? chartData;
   late int lastDataIndex;
   double? previousMarkerY;
-  late Timer _timer;
+
   List<LiveData> buyTrades = [];
   List<LiveData> sellTrades = [];
   Map<int, int> markersTimestamps = {};
   double previousSpeed = 0.0;
   bool hasOpenTrade = false;
   TradeType? lastTradeType;
+  late double userBalance; // Добавим эту строку
+
   double currentReward = 0.0;
   void updateReward(double newSpeed, TradeType tradeType) {
     if (hasOpenTrade) {
@@ -94,10 +96,6 @@ class LindeState extends State<Linde> {
 
       // Вызовите функцию updateReward при каждой сделке
       updateReward(newSpeed, TradeType.buy);
-
-      _timer = Timer(Duration(seconds: 10), () {
-        removeExpiredMarkers();
-      });
     });
   }
 
@@ -121,18 +119,7 @@ class LindeState extends State<Linde> {
 
       // Обновляем reward при продаже
       updateReward(newSpeed, TradeType.sell);
-
-      _timer = Timer(Duration(seconds: 10), () {
-        removeExpiredMarkers();
-      });
     });
-  }
-
-  @override
-  void dispose() {
-    // Отмените таймер в методе dispose
-    _timer.cancel();
-    super.dispose();
   }
 
   void removeExpiredMarkers() {
@@ -157,7 +144,7 @@ class LindeState extends State<Linde> {
   void initState() {
     chartData = getChartData(widget.currencyPair!);
     lastDataIndex = chartData!.length - 1;
-    // Timer.periodic(const Duration(seconds: 2), updateDataSource);
+
     super.initState();
   }
 

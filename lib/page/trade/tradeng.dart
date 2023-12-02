@@ -1,5 +1,6 @@
 // ignore_for_file: unnecessary_null_comparison
 import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simulator_of_trading/page/main/main_page.dart';
@@ -25,6 +26,7 @@ class _TradengState extends State<Tradeng> {
   List<Offset> markers = [];
   late List<CurrencyPair> currencyPairs;
   late CurrencyPair selectedCurrencyPair;
+  double userBalance = 10000;
   final List<String> price = [
     '20',
     '50',
@@ -276,10 +278,10 @@ class _TradengState extends State<Tradeng> {
                                 setState(() {
                                   selectedPriceIndex = index;
                                   selectedPrice = price[index];
-                                  widget.onAmountSelected
-                                      ?.call(int.parse(selectedPrice));
-
-                                  Navigator.pop(context);
+                                  // Обновление баланса на основе выбранной цены
+                                  int priceValue = int.parse(selectedPrice);
+                                  // Пример расчета: убрать выбранную сумму из баланса
+                                  userBalance -= priceValue;
                                 });
                               },
                             );
@@ -461,6 +463,8 @@ class _TradengState extends State<Tradeng> {
           timer.cancel();
           isTimerRunning = false;
           selectedTime = '00:30';
+          lindeKey.currentState?.removeExpiredMarkers();
+
           // Обновление графика каждую секунду после окончания таймера
           chartTimer = Timer.periodic(Duration(seconds: 1), (timer) {
             lindeKey.currentState?.updateDataSource(timer);
@@ -507,6 +511,24 @@ class _TradengState extends State<Tradeng> {
       CurrencyPair('GBP/USD'),
     ];
     selectedCurrencyPair = currencyPairs.first;
+  }
+
+  void buyTrade() {
+    int selectedPriceInt = int.parse(selectedPrice);
+    setState(() {
+      userBalance -= selectedPriceInt; // Вычитаем выбранную цену из баланса
+      lindeKey.currentState?.buyTrade();
+      _startChartTimer();
+    });
+  }
+
+  void sellTrade() {
+    int selectedPriceInt = int.parse(selectedPrice);
+    setState(() {
+      userBalance -= selectedPriceInt; // Вычитаем выбранную цену из баланса
+      lindeKey.currentState?.sellTrade();
+      _startChartTimer();
+    });
   }
 
   @override
@@ -577,7 +599,12 @@ class _TradengState extends State<Tradeng> {
                   ),
                 ],
               ),
-              Balance(),
+              KeyedSubtree(
+                key: UniqueKey(), // Добавьте ключ
+                child: Balance(onBalanceChanged: (balance) {
+                  setState(() {});
+                }),
+              ),
             ],
           ),
         ),
@@ -593,11 +620,9 @@ class _TradengState extends State<Tradeng> {
               child: Linde(
                 currencyPair: currencyPairs[selectedOptionIndex],
                 key: lindeKey,
-                onUpdateReward: (double newReward) {
-                  setState(() {
-                    reward = newReward;
-                    print(reward);
-                  });
+                onUpdateReward: (double newSpeed) {
+                  reward = newSpeed;
+                  setState(() {});
                 },
               ),
             ),
@@ -770,8 +795,7 @@ class _TradengState extends State<Tradeng> {
                   child: ElevatedButton(
                     onPressed: () {
                       setState(() {
-                        lindeKey.currentState?.buyTrade();
-                        _startChartTimer();
+                        buyTrade();
                       });
                       print('Buy button pressed');
                     },
@@ -806,8 +830,7 @@ class _TradengState extends State<Tradeng> {
                     onPressed: () {
                       setState(() {
                         // Вызываем метод для вычета суммы из баланса перед совершением сделки "Sell"
-                        lindeKey.currentState?.sellTrade();
-                        _startChartTimer();
+                        sellTrade();
                       });
                     },
                     child: const Text(

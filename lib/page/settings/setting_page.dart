@@ -13,7 +13,7 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  String urlToShare = 'http://example.com';
+  String urlToShare = 'com.craftholic.simulatoroftrading';
   final Uri urlSupport = Uri.parse(
     'https://docs.google.com/forms/d/e/1FAIpQLSfwfo0dTc3fVmuUu3Gxv_99eyl9jt2s5ru72hcgyNiv3Ij2hw/viewform?usp=sf_link',
   );
