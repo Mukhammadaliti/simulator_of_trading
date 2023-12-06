@@ -9,10 +9,8 @@ import 'package:simulator_of_trading/page/trade/widget/balance.dart';
 import 'package:svg_flutter/svg.dart';
 
 class Tradeng extends StatefulWidget {
-  final Function(int)? onAmountSelected;
   const Tradeng({
     Key? key,
-    this.onAmountSelected,
   }) : super(key: key);
 
   @override
@@ -45,6 +43,10 @@ class _TradengState extends State<Tradeng> {
   Timer? chartTimer;
   double reward = 0.0;
   bool isTimerRunning = false;
+
+  int? openedTradeTime;
+  double? openedTradeSpeed;
+
   void _showBottomSheet(
     BuildContext context,
   ) {
@@ -279,6 +281,8 @@ class _TradengState extends State<Tradeng> {
                                   selectedPriceIndex = index;
                                   selectedPrice = price[index];
                                 });
+                                log('Balanceeee=====>' + selectedPrice);
+                                Navigator.pop(context);
                               },
                             );
                           }),
@@ -465,6 +469,9 @@ class _TradengState extends State<Tradeng> {
           chartTimer = Timer.periodic(Duration(seconds: 1), (timer) {
             lindeKey.currentState?.updateDataSource(timer);
           });
+          if (lindeKey.currentState!.selectedTrade == true) {
+            balance.currentState!.tradeBalance(int.parse(selectedPrice) * 2);
+          } else {}
         } else {
           remainingDurationInSeconds--;
           int minutes = remainingDurationInSeconds ~/ 60;
@@ -512,13 +519,33 @@ class _TradengState extends State<Tradeng> {
   void buyTrade() {
     setState(() {
       lindeKey.currentState?.buyTrade();
+
+      balance.currentState?.decreaseBalance(
+        int.parse(selectedPrice),
+      );
+      print(
+          'Buy trade pressed. New balance: ${balance.currentState?.userBalance}');
+
       _startChartTimer();
+    });
+  }
+
+  void updateBalance(int newBalance) {
+    setState(() {
+      userBalance = newBalance;
     });
   }
 
   void sellTrade() {
     setState(() {
       lindeKey.currentState?.sellTrade();
+      balance.currentState?.decreaseBalance(
+        int.parse(selectedPrice),
+      );
+
+      print(
+          'Sell trade pressed. New balance: ${balance.currentState?.userBalance}');
+
       _startChartTimer();
     });
   }
@@ -598,14 +625,9 @@ class _TradengState extends State<Tradeng> {
                   ),
                 ],
               ),
-              KeyedSubtree(
-                key: UniqueKey(), // Добавьте ключ
-                child: Balance(onBalanceChanged: (balance) {
-                  setState(() {
-                    userBalance = balance;
-                    log('USERBALANCE======>$userBalance');
-                  });
-                }),
+              Balance(
+                key: balance,
+                onBalanceChanged: updateBalance,
               ),
             ],
           ),
@@ -622,8 +644,8 @@ class _TradengState extends State<Tradeng> {
                 currencyPair: currencyPairs[selectedOptionIndex],
                 key: lindeKey,
                 onUpdateReward: (double newSpeed) {
-                  reward = newSpeed;
                   setState(() {
+                    reward = newSpeed;
                     print("REEWARD+++++>$reward");
                     print("SPEED+++++>$newSpeed");
                   });

@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class Balance extends StatefulWidget {
-  final Function(int)? onBalanceChanged;
+  Function(int)? onBalanceChanged;
 
-  const Balance({Key? key, this.onBalanceChanged}) : super(key: key);
+  Balance({Key? key, this.onBalanceChanged}) : super(key: key);
 
   @override
   State<Balance> createState() => BalanceState();
@@ -29,7 +29,6 @@ class BalanceState extends State<Balance> {
     setState(() {
       userBalance = prefs.getInt('balance') ?? 10000;
     });
-    log('onChangedBalance --> ${widget.onBalanceChanged}');
   }
 
   // Запуск ежедневной задачи
@@ -54,6 +53,34 @@ class BalanceState extends State<Balance> {
       });
 
       // Уведомляем слушателей об изменении баланса
+    }
+  }
+
+// Пример функции трейдинг баланса в BalanceState
+  void tradeBalance(int amount) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        int updatedBalanceValue = userBalance + amount;
+        prefs.setInt('balance', updatedBalanceValue); // Исправлена эта строка
+        userBalance = updatedBalanceValue;
+        widget.onBalanceChanged?.call(updatedBalanceValue);
+        print('$userBalance - новый баланс');
+      });
+    }
+  }
+
+// Пример функции уменьшения баланса в BalanceState
+  void decreaseBalance(int amount) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        int updatedBalanceValue = userBalance - amount;
+        prefs.setInt('balance', updatedBalanceValue); // Исправлена эта строка
+        userBalance = updatedBalanceValue;
+        widget.onBalanceChanged?.call(updatedBalanceValue);
+        print('$userBalance - новый баланс');
+      });
     }
   }
 
