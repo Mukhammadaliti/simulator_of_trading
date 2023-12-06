@@ -517,17 +517,24 @@ class _TradengState extends State<Tradeng> {
   }
 
   void buyTrade() {
-    setState(() {
-      lindeKey.currentState?.buyTrade();
+    int price = int.parse(selectedPrice);
 
-      balance.currentState?.decreaseBalance(
-        int.parse(selectedPrice),
-      );
-      print(
-          'Buy trade pressed. New balance: ${balance.currentState?.userBalance}');
+    if (balance.currentState?.userBalance != null &&
+        balance.currentState!.userBalance >= price) {
+      setState(() {
+        lindeKey.currentState?.buyTrade();
 
-      _startChartTimer();
-    });
+        balance.currentState?.decreaseBalance(price);
+
+        print(
+            'Buy trade pressed. New balance: ${balance.currentState?.userBalance}');
+
+        _startChartTimer();
+      });
+    } else {
+      // Handle insufficient balance (optional)
+      print('Insufficient balance for the buy trade.');
+    }
   }
 
   void updateBalance(int newBalance) {
@@ -537,17 +544,23 @@ class _TradengState extends State<Tradeng> {
   }
 
   void sellTrade() {
-    setState(() {
-      lindeKey.currentState?.sellTrade();
-      balance.currentState?.decreaseBalance(
-        int.parse(selectedPrice),
-      );
+    int price = int.parse(selectedPrice);
 
-      print(
-          'Sell trade pressed. New balance: ${balance.currentState?.userBalance}');
+    if (balance.currentState?.userBalance != null &&
+        balance.currentState!.userBalance >= price) {
+      setState(() {
+        lindeKey.currentState?.sellTrade();
+        balance.currentState?.decreaseBalance(price);
 
-      _startChartTimer();
-    });
+        print(
+            'Sell trade pressed. New balance: ${balance.currentState?.userBalance}');
+
+        _startChartTimer();
+      });
+    } else {
+      // Handle insufficient balance (optional)
+      print('Insufficient balance for the sell trade.');
+    }
   }
 
   @override

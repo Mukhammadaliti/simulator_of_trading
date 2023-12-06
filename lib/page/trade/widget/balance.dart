@@ -62,6 +62,10 @@ class BalanceState extends State<Balance> {
     if (mounted) {
       setState(() {
         int updatedBalanceValue = userBalance + amount;
+        // Check if the updated balance is less than 0
+        if (updatedBalanceValue < 0) {
+          updatedBalanceValue = 0;
+        }
         prefs.setInt('balance', updatedBalanceValue); // Исправлена эта строка
         userBalance = updatedBalanceValue;
         widget.onBalanceChanged?.call(updatedBalanceValue);
@@ -76,6 +80,10 @@ class BalanceState extends State<Balance> {
     if (mounted) {
       setState(() {
         int updatedBalanceValue = userBalance - amount;
+        // Check if the updated balance is less than 0
+        if (updatedBalanceValue < 0) {
+          updatedBalanceValue = 0;
+        }
         prefs.setInt('balance', updatedBalanceValue); // Исправлена эта строка
         userBalance = updatedBalanceValue;
         widget.onBalanceChanged?.call(updatedBalanceValue);
