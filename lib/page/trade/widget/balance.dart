@@ -1,52 +1,93 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 class Balance extends StatefulWidget {
-  const Balance({Key? key}) : super(key: key);
+  Function(int)? onBalanceChanged;
+
+  Balance({Key? key, this.onBalanceChanged}) : super(key: key);
 
   @override
-  State<Balance> createState() => _BalanceState();
+  State<Balance> createState() => BalanceState();
 }
 
-class _BalanceState extends State<Balance> {
-  int userBalance = 9000;
-  late DateTime lastLoginDate;
+class BalanceState extends State<Balance> {
+  int userBalance = 10000;
 
   @override
   void initState() {
     super.initState();
-    lastLoginDate = DateTime.now();
-    getLastLoginDate();
-    updateBalance();
+    initializeBalance();
+    startDailyTask();
   }
 
-  void getLastLoginDate() async {
+  // Установка начального баланса
+  void initializeBalance() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (prefs.containsKey('lastLoginDate')) {
-      lastLoginDate = DateTime.parse(prefs.getString('lastLoginDate')!);
-    } else {
-      lastLoginDate = DateTime.now();
-      updateLastLoginDate();
-    }
+    setState(() {
+      userBalance = prefs.getInt('balance') ?? 10000;
+    });
   }
 
-  void updateLastLoginDate() async {
+  // Запуск ежедневной задачи
+  void startDailyTask() {
+    const oneDay = const Duration(days: 1);
+    Timer.periodic(oneDay, (Timer t) {
+      // Ваш код для увеличения баланса
+      increaseBalance();
+    });
+  }
+
+  // Логика увеличения баланса
+  void increaseBalance() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('lastLoginDate', DateTime.now().toIso8601String());
-  }
 
-  void updateBalance() {
-    if (DateTime.now().difference(lastLoginDate).inDays > 0) {
+    if (mounted) {
       setState(() {
-        if (userBalance < 10000) {
-          userBalance = 10000;
-
-          // Предположим, что у вас есть функция установки нового баланса пользователю.
-          // setNewBalance(userBalance);
-        }
+        userBalance += 1000;
+        prefs.setInt('balance', userBalance);
+        print('$userBalance tvoy balance');
+        widget.onBalanceChanged?.call(userBalance);
       });
-      updateLastLoginDate();
+
+      // Уведомляем слушателей об изменении баланса
     }
+  }
+
+// Пример функции трейдинг баланса в BalanceState
+  void tradeBalance(int amount) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        int updatedBalanceValue = userBalance + amount;
+        prefs.setInt('balance', updatedBalanceValue); // Исправлена эта строка
+        userBalance = updatedBalanceValue;
+        widget.onBalanceChanged?.call(updatedBalanceValue);
+        print('$userBalance - новый баланс');
+      });
+    }
+  }
+
+// Пример функции уменьшения баланса в BalanceState
+  void decreaseBalance(int amount) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        int updatedBalanceValue = userBalance - amount;
+        prefs.setInt('balance', updatedBalanceValue); // Исправлена эта строка
+        userBalance = updatedBalanceValue;
+        widget.onBalanceChanged?.call(updatedBalanceValue);
+        print('$userBalance - новый баланс');
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    increaseBalance();
+    super.dispose();
   }
 
   @override
@@ -69,7 +110,7 @@ class _BalanceState extends State<Balance> {
           height: 4,
         ),
         Text(
-          userBalance.toString(),
+          '$userBalance',
           textAlign: TextAlign.right,
           style: const TextStyle(
             color: Colors.white,
