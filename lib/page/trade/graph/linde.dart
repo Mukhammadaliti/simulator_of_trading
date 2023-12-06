@@ -34,22 +34,33 @@ class LindeState extends State<Linde> {
   bool hasOpenTrade = false;
   double currentReward = 0.0;
   bool selectedTrade = false;
-
   void updateReward(double? newSpeed, TradeType tradeType) {
     if (hasOpenTrade) {
       setState(() {
-        if ((tradeType == TradeType.buy && newSpeed! > previousSpeed) ||
-            (tradeType == TradeType.sell && newSpeed! < previousSpeed)) {
-          currentReward = 2;
+        double markerSpeed = tradeType == TradeType.buy
+            ? (buyTrades.isNotEmpty ? buyTrades.last.speed.toDouble() : 0.0)
+            : (sellTrades.isNotEmpty ? sellTrades.last.speed.toDouble() : 0.0);
+
+        log('newSpeed: $newSpeed, markerSpeed: $markerSpeed');
+
+        if ((tradeType == TradeType.buy && newSpeed! > markerSpeed) ||
+            (tradeType == TradeType.sell && newSpeed! < markerSpeed)) {
+          currentReward = 2.0;
           selectedTrade = true;
         } else {
-          currentReward = 0;
+          currentReward = 0.0;
           selectedTrade = false;
         }
         widget.onUpdateReward(currentReward);
 
-        previousSpeed = newSpeed!;
-        log('SPEED======>${previousSpeed}');
+        log('СКОРОСТЬ======>${newSpeed}');
+        log('Последние данные======>${chartData![lastDataIndex].speed}');
+      });
+    } else {
+      // Если нет открытых сделок, установите reward в 0 или другое значение по умолчанию
+      setState(() {
+        currentReward = 0.0;
+        selectedTrade = false;
       });
     }
   }
@@ -75,7 +86,8 @@ class LindeState extends State<Linde> {
       buyTrades.add(newTrade);
       markersTimestamps[newTrade.time.toInt()] =
           DateTime.now().millisecondsSinceEpoch;
-      updateReward(speeds, TradeType.buy);
+      log('BuyIndex=====${buyTrades.last.speed}');
+      updateReward(newSpeed, TradeType.buy);
     });
   }
 
@@ -96,8 +108,8 @@ class LindeState extends State<Linde> {
       sellTrades.add(newTrade);
       markersTimestamps[newTrade.time.toInt()] =
           DateTime.now().millisecondsSinceEpoch;
-      updateReward(speeds!, TradeType.sell);
-      log('SellIndex=====$speeds');
+      log('SellIndex=====${sellTrades.last.speed}');
+      updateReward(newSpeed, TradeType.sell);
     });
   }
 
@@ -241,26 +253,28 @@ class LindeState extends State<Linde> {
   }
 
   int time = 19;
-  double? speeds;
-  void updateDataSource(Timer timer) {
+  void updateDataSource(
+    Timer timer,
+    TradeType tradeType,
+  ) {
     setState(() {
       double randomChange = (math.Random().nextDouble() - 0.5) * 0.001;
-      speeds = chartData![lastDataIndex].speed + randomChange;
-      // double newSpeed = chartData![lastDataIndex].speed + randomChange;
+      double newSpeed = chartData![lastDataIndex].speed + randomChange;
 
       double minValue = getMinValue();
       double maxValue = getMaxValue();
 
-      speeds = speeds!.clamp(minValue, maxValue);
+      newSpeed = newSpeed.clamp(minValue, maxValue);
 
-      chartData!.add(LiveData(time++, speeds!,
-          TradeType.buy)); // Изменено: используйте текущее значение времени
+      chartData!.add(LiveData(time++, newSpeed,
+          tradeType)); // Изменено: используйте текущее значение времени
       lastDataIndex = chartData!.length - 1;
       if (chartData!.length > 19) {
         chartData!.removeAt(0);
         lastDataIndex--;
         // log('CHARD======>${chartData![lastDataIndex].speed}');
-        log('CHARD======>$speeds');
+        // log('CHARD======>$speeds');
+        updateReward(newSpeed, tradeType);
       }
     });
   }

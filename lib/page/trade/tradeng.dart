@@ -424,6 +424,7 @@ class _TradengState extends State<Tradeng> {
     );
   }
 
+  TradeType currentTradeType = TradeType.buy;
   void _startChartTimer() {
     if (chartTimer != null && chartTimer!.isActive) {
       chartTimer!.cancel();
@@ -467,7 +468,7 @@ class _TradengState extends State<Tradeng> {
 
           // Обновление графика каждую секунду после окончания таймера
           chartTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-            lindeKey.currentState?.updateDataSource(timer);
+            lindeKey.currentState?.updateDataSource(timer, currentTradeType);
           });
           if (lindeKey.currentState!.selectedTrade == true) {
             balance.currentState!.tradeBalance(int.parse(selectedPrice) * 2);
@@ -481,7 +482,7 @@ class _TradengState extends State<Tradeng> {
 
           // Обновление графика с интервалом
           if (remainingDurationInSeconds % updateInterval == 0) {
-            lindeKey.currentState?.updateDataSource(timer);
+            lindeKey.currentState?.updateDataSource(timer, currentTradeType);
           }
         }
       });
@@ -523,9 +524,8 @@ class _TradengState extends State<Tradeng> {
         balance.currentState!.userBalance >= price) {
       setState(() {
         lindeKey.currentState?.buyTrade();
-
         balance.currentState?.decreaseBalance(price);
-
+        currentTradeType = TradeType.buy;
         print(
             'Buy trade pressed. New balance: ${balance.currentState?.userBalance}');
 
@@ -551,7 +551,7 @@ class _TradengState extends State<Tradeng> {
       setState(() {
         lindeKey.currentState?.sellTrade();
         balance.currentState?.decreaseBalance(price);
-
+        currentTradeType = TradeType.sell;
         print(
             'Sell trade pressed. New balance: ${balance.currentState?.userBalance}');
 
